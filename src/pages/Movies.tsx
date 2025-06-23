@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useMovies } from "../contexts/MovieContext";
-import { Search, Filter, Star, Clock, Calendar, ChevronDown, ChevronUp, MoreVertical, Plus, Trash, Edit, Film } from "lucide-react";
+import { Search, Filter, Star, Clock, Calendar, ChevronDown, ChevronUp, Plus, Trash, Edit, Film } from "lucide-react";
 import MovieForm from "../components/MovieForm";
 import MovieDetail from "../components/MovieDetail";
 import DeleteConfirmation from "../components/DeleteConfirmation";

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { Theater } from '../data/mock-data';
-import { X, Edit, Trash, MapPin, Calendar, Film, Clock, DollarSign, Star } from 'lucide-react';
+import { X, Edit, Trash, MapPin, Calendar, Clock, DollarSign, Star } from 'lucide-react';
 import { useShowtimes } from '../contexts/ShowtimeContext';
 import { movies } from '../data/mock-data';
 
@@ -17,6 +17,7 @@ const TheaterDetail: React.FC<TheaterDetailProps> = ({ theater, onClose, onEdit,
   
   const theaterShowtimes = getShowtimesByTheater(theater.id);
   const theaterMovies = getMoviesByTheater(theater.id);
+  console.log(theaterMovies);
   
   // Lấy danh sách các ngày có suất chiếu tại rạp
   const availableDates = [...new Set(theaterShowtimes.map(showtime => showtime.date))].sort();
