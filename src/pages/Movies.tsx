@@ -5,6 +5,7 @@ import MovieForm from "../components/MovieForm";
 import MovieDetail from "../components/MovieDetail";
 import DeleteConfirmation from "../components/DeleteConfirmation";
 import type { Movie, Showtime } from "../data/mock-data";
+import useQuery from "../hooks/useQuery";
 
 export default function Movies() {
   const { movies, addMovie, updateMovie, deleteMovie } = useMovies();
@@ -19,6 +20,17 @@ export default function Movies() {
   const [editingMovie, setEditingMovie] = useState<Movie | null>(null);
   const [viewingMovie, setViewingMovie] = useState<Movie | null>(null);
   const [deletingMovie, setDeletingMovie] = useState<Movie | null>(null);
+
+  // Khởi tạo query và lấy dữ liệu
+  const [query, updateQuery, resetQuery] = useQuery({
+    page: 1,
+    limit: 5,
+    search: searchTerm,
+    genre: selectedGenre,
+    sort: sortField,
+    order: sortDirection,
+    upcoming: selectedGenre === "Sắp chiếu" ? true : false,
+  });
 
   // Get unique genres
   const genres = useMemo(() => {

@@ -47,7 +47,7 @@ function App() {
                         <Route index element={<Dashboard />} />
                         <Route path="movies" element={<Movies />} />
                         <Route path="users" element={
-                          <ProtectedRoute requiredRole="admin">
+                          <ProtectedRoute requiredRole="ADMIN">
                             <Users />
                           </ProtectedRoute>
                         } />

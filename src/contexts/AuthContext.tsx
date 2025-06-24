@@ -7,7 +7,7 @@ export interface User {
     id: string;
     email: string;
     name: string;
-    role: 'admin' | 'user';
+    role: 'ADMIN' | 'USER';
     avatar?: string;
 }
 
@@ -97,6 +97,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const logout = () => {
         setUser(null);
         localStorage.removeItem('user');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
         navigate('/login');
     };
 
