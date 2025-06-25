@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useTheaters } from '../contexts/TheaterContext';
 import { Search, Plus, MapPin, MoreVertical, Edit, Trash, Building2, Globe, Map } from 'lucide-react';
-import TheaterForm from '../components/TheaterForm';
-import TheaterDetail from '../components/TheaterDetail';
+import TheaterForm from '../components/theaters/TheaterForm';
+import TheaterDetail from '../components/theaters/TheaterDetail';
 import DeleteConfirmation from '../components/DeleteConfirmation';
+import ServiceApi from '../services/api';
 
 const Theaters: React.FC = () => {
   const { theaters, addTheater, updateTheater, deleteTheater, getTheater } = useTheaters();
@@ -23,8 +24,15 @@ const Theaters: React.FC = () => {
     );
   });
 
-  const handleAddTheater = (theaterData: Omit<typeof theaters[0], 'id'>) => {
-    addTheater(theaterData);
+  const handleAddTheater = async (theaterData: Omit<typeof theaters[0], 'id'>) => {
+    console.log(theaterData);
+    try {
+      const response = await ServiceApi.post('/theaters', theaterData);
+      console.log(response);
+    } catch (error) {
+      
+    }
+    // addTheater(theaterData);
     setShowAddForm(false);
   };
 

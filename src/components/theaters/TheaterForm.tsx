@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import type { Theater } from '../data/mock-data';
+import type { Theater } from '../../data/mock-data';
 import { X } from 'lucide-react';
+import ImageUpload from '../ImageUpload';
 
 interface TheaterFormProps {
   theater?: Theater;
@@ -12,6 +13,7 @@ interface TheaterFormProps {
 const emptyTheater: Omit<Theater, 'id'> = {
   name: '',
   location: '',
+  image: '',
   coordinates: {
     lat: 0,
     lng: 0
@@ -48,6 +50,13 @@ const TheaterForm: React.FC<TheaterFormProps> = ({ theater, onSubmit, onCancel }
     }
   };
 
+  const handleImageChange = (imageData: string) => {
+    setFormData({
+      ...formData,
+      image: imageData
+    });
+  };
+
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
     
@@ -63,9 +72,17 @@ const TheaterForm: React.FC<TheaterFormProps> = ({ theater, onSubmit, onCancel }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const formDataToSend = {
+      ...formData,
+      coordinates: {
+        lat: formData.coordinates.lat,
+        lng: formData.coordinates.lng
+      }
+    };
+    // console.log(formDataToSend);
     
     if (validate()) {
-      onSubmit(formData);
+      onSubmit(formDataToSend);
     }
   };
 
@@ -127,7 +144,7 @@ const TheaterForm: React.FC<TheaterFormProps> = ({ theater, onSubmit, onCancel }
             </div>
 
             {/* Coordinates */}
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
               <label className="block text-sm font-medium">
                 Tọa độ
               </label>
@@ -168,6 +185,15 @@ const TheaterForm: React.FC<TheaterFormProps> = ({ theater, onSubmit, onCancel }
               {errors.coordinates && (
                 <p className="text-error-500 text-xs">{errors.coordinates}</p>
               )}
+            </div> */}
+
+            {/* Image */}
+            <div className="space-y-2">
+              <ImageUpload
+                initialImage={formData.image}
+                onImageChange={handleImageChange}
+                label="Ảnh rạp"
+              />
             </div>
           </div>
 

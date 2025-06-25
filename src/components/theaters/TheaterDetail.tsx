@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import type { Theater } from '../data/mock-data';
+import type { Theater } from '../../data/mock-data';
 import { X, Edit, Trash, MapPin, Calendar, Clock, DollarSign, Star } from 'lucide-react';
-import { useShowtimes } from '../contexts/ShowtimeContext';
-import { movies } from '../data/mock-data';
+import { useShowtimes } from '../../contexts/ShowtimeContext';
+import { movies } from '../../data/mock-data';
 
 interface TheaterDetailProps {
   theater: Theater;

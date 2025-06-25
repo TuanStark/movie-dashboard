@@ -13,7 +13,8 @@ import {
   LogOut,
   Settings,
   HelpCircle,
-  User
+  User,
+  Calendar
 } from 'lucide-react';
 
 interface NavLinkProps {
@@ -100,6 +101,7 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
           <NavLink to="/users" icon={<UsersIcon size={18} />} label="Users" />
           <NavLink to="/bookings" icon={<Ticket size={18} />} label="Bookings" />
           <NavLink to="/theaters" icon={<Building2 size={18} />} label="Theaters" />
+          <NavLink to="/showtimes" icon={<Calendar size={18} />} label="Showtimes" />
           <NavLink to="/articles" icon={<Newspaper size={18} />} label="Articles" />
         </nav>
         

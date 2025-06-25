@@ -9,6 +9,7 @@ import Movies from "./pages/Movies";
 import Users from "./pages/Users";
 import Bookings from "./pages/Bookings";
 import Theaters from "./pages/Theaters";
+import Showtimes from "./pages/Showtimes";
 import Articles from "./pages/Articles";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -53,6 +54,7 @@ function App() {
                         } />
                         <Route path="bookings" element={<Bookings />} />
                         <Route path="theaters" element={<Theaters />} />
+                        <Route path="showtimes" element={<Showtimes />} />
                         <Route path="articles" element={<Articles />} />
                       </Route>
                     </Routes>
