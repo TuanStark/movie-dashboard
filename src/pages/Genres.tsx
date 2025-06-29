@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
-import { Search, Plus, Trash, Edit, Film, ChevronDown, ChevronUp } from "lucide-react";
-import GenreForm from "../components/GenreForm";
+import { Search, Plus, Trash, Edit, Film, ChevronDown, ChevronUp, Calendar, List } from "lucide-react";
+import GenreForm from "../components/genres/GenreForm";
 import DeleteConfirmation from "../components/DeleteConfirmation";
 import useQuery from "../hooks/useQuery";
 import ServiceApi from "../services/api";
@@ -173,17 +173,20 @@ export default function Genres() {
   }
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 mb-4 md:mb-0">Quản lý Thể loại Phim</h1>
-        <div className="flex space-x-2">
-          <button
-            onClick={() => setIsAddFormOpen(true)}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-          >
-            <Plus size={18} className="mr-2" />
-            Thêm thể loại
-          </button>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-orange-100/70 dark:bg-blue-900/30">
+            <List size={24} className="text-orange-600" />
+          </div>
+          <h1 className="text-2xl font-bold gradient-text">Quản lý Thể loại Phim</h1>
         </div>
+        <button
+          onClick={() => setIsAddFormOpen(true)}
+          className="btn btn-primary flex items-center gap-2 hover-lift"
+        >
+          <Plus size={18} />
+          <span>Thêm thể loại</span>
+        </button>
       </div>
 
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">

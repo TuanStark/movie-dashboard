@@ -1,8 +1,8 @@
 import { useState, useMemo } from "react";
 import { useMovies } from "../contexts/MovieContext";
 import { Search, Filter, Star, Clock, Calendar, ChevronDown, ChevronUp, Plus, Trash, Edit, Film } from "lucide-react";
-import MovieForm from "../components/MovieForm";
-import MovieDetail from "../components/MovieDetail";
+import MovieForm from "../components/movies/MovieForm";
+import MovieDetail from "../components/movies/MovieDetail";
 import DeleteConfirmation from "../components/DeleteConfirmation";
 import type { Movie, Showtime } from "../data/mock-data";
 import useQuery from "../hooks/useQuery";

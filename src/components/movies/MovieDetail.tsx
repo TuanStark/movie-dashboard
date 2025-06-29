@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import type { Movie } from '../data/mock-data';
+import type { Movie } from '../../data/mock-data';
 import { X, Star, Clock, Calendar, Video, ExternalLink, MapPin, DollarSign, Calendar as CalendarIcon } from 'lucide-react';
-import { useShowtimes } from '../contexts/ShowtimeContext';
-import { theaters } from '../data/mock-data';
+import { useShowtimes } from '../../contexts/ShowtimeContext';
+import { theaters } from '../../data/mock-data';
 
 interface MovieDetailProps {
   movie: Movie;
