@@ -1,11 +1,13 @@
 import axios from 'axios';
 
 const BASE_URL = 'http://localhost:8000';
+const accessToken = localStorage.getItem('accessToken');
 
 const ServiceApi = axios.create({
   baseURL: BASE_URL,
   headers: {
-    'Content-Type': 'application/json',
+    // 'Content-Type': 'application/json',
+    'Authorization': `Bearer ${accessToken}`
   },
 });
 
@@ -46,7 +48,7 @@ ServiceApi.interceptors.response.use(
         }
         
         // Call refresh token endpoint
-        const response = await axios.post(`${BASE_URL}/auth/refresh-token`, {
+        const response = await axios.post(`${BASE_URL}/auth/refresh`, {
           refreshToken,
         });
         

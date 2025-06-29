@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { Movie, Theater, Showtime } from '../data/mock-data';
+import type { Movie, Showtime } from '../data/mock-data';
 import { X, Plus, Trash, Clock } from 'lucide-react';
 import ImageUpload from './ImageUpload';
 import { theaters } from '../data/mock-data';

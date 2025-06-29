@@ -1,21 +1,34 @@
-import React, { useState } from 'react';
-import { useTheaters } from '../contexts/TheaterContext';
-import { Search, Plus, MapPin, MoreVertical, Edit, Trash, Building2, Globe, Map } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Search, Plus, MapPin, MoreVertical, Edit, Trash, Building2 } from 'lucide-react';
 import TheaterForm from '../components/theaters/TheaterForm';
 import TheaterDetail from '../components/theaters/TheaterDetail';
 import DeleteConfirmation from '../components/DeleteConfirmation';
 import ServiceApi from '../services/api';
+import type { Theater } from '../data/mock-data';
 
 const Theaters: React.FC = () => {
-  const { theaters, addTheater, updateTheater, deleteTheater, getTheater } = useTheaters();
-  
+  const [theaters, setTheaters] = useState<Theater[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingTheaterId, setEditingTheaterId] = useState<number | null>(null);
   const [viewingTheaterId, setViewingTheaterId] = useState<number | null>(null);
   const [deletingTheaterId, setDeletingTheaterId] = useState<number | null>(null);
 
-  // Lọc theaters theo tìm kiếm
+  // Fetch theaters from API
+  const fetchTheaters = async () => {
+    try {
+      const response = await ServiceApi.get('/theaters');
+      setTheaters(response.data.data.data);
+    } catch (error) {
+      console.error('Error fetching theaters:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchTheaters();
+  }, []);
+
+  // Filter theaters based on search term
   const filteredTheaters = theaters.filter(theater => {
     const searchLower = searchTerm.toLowerCase();
     return (
@@ -24,27 +37,30 @@ const Theaters: React.FC = () => {
     );
   });
 
-  const handleAddTheater = async (theaterData: Omit<typeof theaters[0], 'id'>) => {
-    console.log(theaterData);
-    try {
-      const response = await ServiceApi.post('/theaters', theaterData);
-      console.log(response);
-    } catch (error) {
-      
-    }
-    // addTheater(theaterData);
+  // Handle adding new theater
+  const handleAddTheater = async () => {
     setShowAddForm(false);
+    await fetchTheaters(); // Refresh the list after adding
   };
 
-  const handleUpdateTheater = (id: number, theaterData: Omit<typeof theaters[0], 'id'>) => {
-    updateTheater(id, theaterData);
+  // Handle updating theater
+  const handleUpdateTheater = async () => {
     setEditingTheaterId(null);
+    await fetchTheaters();
   };
 
-  const handleDeleteTheater = () => {
+  // Handle deleting theater
+  const handleDeleteTheater = async () => {
     if (deletingTheaterId !== null) {
-      deleteTheater(deletingTheaterId);
-      setDeletingTheaterId(null);
+      try {
+        // Call API to delete theater
+        await ServiceApi.delete(`/theaters/${deletingTheaterId}`);
+        
+        setDeletingTheaterId(null);
+        await fetchTheaters();
+      } catch (error) {
+        console.error('Error deleting theater:', error);
+      }
     }
   };
 
@@ -87,13 +103,13 @@ const Theaters: React.FC = () => {
             filteredTheaters.map((theater) => (
               <div 
                 key={theater.id} 
-                className="card overflow-hidden hover-lift"
+                className="card overflow-hidden hover-lift cursor-pointer"
                 onClick={() => setViewingTheaterId(theater.id)}
               >
-                {/* Map Preview Placeholder */}
+                {/* Theater Image */}
                 <div className="h-32 bg-gradient-to-r from-purple-400/20 to-blue-400/20 dark:from-purple-900/30 dark:to-blue-900/30 relative overflow-hidden">
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <Globe size={40} className="text-purple-300 dark:text-purple-700" />
+                    <img src={theater.logo} alt={theater.name} className="w-full h-full object-cover" />
                   </div>
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3">
                     <h3 className="font-semibold text-lg text-white">{theater.name}</h3>
@@ -139,22 +155,6 @@ const Theaters: React.FC = () => {
                       </button>
                     </div>
                   </div>
-                  <div className="bg-gray-50/80 dark:bg-gray-700/80 p-3 rounded-xl text-sm mt-3">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Map size={16} className="text-gray-400" />
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Tọa độ</p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="bg-white/80 dark:bg-gray-800/80 px-3 py-2 rounded-lg">
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Lat</p>
-                        <p className="font-mono text-xs">{theater.coordinates.lat.toFixed(6)}</p>
-                      </div>
-                      <div className="bg-white/80 dark:bg-gray-800/80 px-3 py-2 rounded-lg">
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Lng</p>
-                        <p className="font-mono text-xs">{theater.coordinates.lng.toFixed(6)}</p>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               </div>
             ))
@@ -178,8 +178,8 @@ const Theaters: React.FC = () => {
       {/* Edit Theater Form */}
       {editingTheaterId !== null && (
         <TheaterForm
-          theater={getTheater(editingTheaterId)}
-          onSubmit={(theaterData) => handleUpdateTheater(editingTheaterId, theaterData)}
+          theater={theaters.find(t => t.id === editingTheaterId)}
+          onSubmit={handleUpdateTheater}
           onCancel={() => setEditingTheaterId(null)}
         />
       )}
@@ -187,7 +187,7 @@ const Theaters: React.FC = () => {
       {/* View Theater Detail */}
       {viewingTheaterId !== null && (
         <TheaterDetail
-          theater={getTheater(viewingTheaterId)!}
+          theater={theaters.find(t => t.id === viewingTheaterId)!}
           onClose={() => setViewingTheaterId(null)}
           onEdit={() => {
             setEditingTheaterId(viewingTheaterId);
@@ -213,4 +213,4 @@ const Theaters: React.FC = () => {
   );
 };
 
-export default Theaters; 
+export default Theaters;

@@ -18,7 +18,7 @@ export interface Theater {
   id: number;
   name: string;
   location: string;
-  image: string;
+  logo: string;
   coordinates: {
     lat: number;
     lng: number;
@@ -242,7 +242,7 @@ export const theaters: Theater[] = [
     id: 1,
     name: "Cineplex Downtown",
     location: "123 Main St, Downtown",
-    image: "https://images.unsplash.com/photo-1509347528160-9a9e33742cdb?q=80&w=2070&auto=format&fit=crop",
+    logo: "https://images.unsplash.com/photo-1509347528160-9a9e33742cdb?q=80&w=2070&auto=format&fit=crop",
     coordinates: {
       lat: 40.7128,
       lng: -74.0060
@@ -252,7 +252,7 @@ export const theaters: Theater[] = [
     id: 2,
     name: "MovieWorld IMAX",
     location: "456 Park Ave, Central District",
-    image: "https://images.unsplash.com/photo-1509347528160-9a9e33742cdb?q=80&w=2070&auto=format&fit=crop",
+    logo: "https://images.unsplash.com/photo-1509347528160-9a9e33742cdb?q=80&w=2070&auto=format&fit=crop",
     coordinates: {
       lat: 40.7305,
       lng: -73.9925
@@ -262,7 +262,7 @@ export const theaters: Theater[] = [
     id: 3,
     name: "Starplex Cinemas",
     location: "789 Broadway, Theater District",
-    image: "https://images.unsplash.com/photo-1509347528160-9a9e33742cdb?q=80&w=2070&auto=format&fit=crop",
+    logo: "https://images.unsplash.com/photo-1509347528160-9a9e33742cdb?q=80&w=2070&auto=format&fit=crop",
     coordinates: {
       lat: 40.7589,
       lng: -73.9851
