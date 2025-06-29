@@ -14,7 +14,8 @@ import {
   Settings,
   HelpCircle,
   User,
-  Calendar
+  Calendar,
+  List
 } from 'lucide-react';
 
 interface NavLinkProps {
@@ -93,16 +94,17 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
             Tổng quan
           </div>
           <NavLink to="/" icon={<LayoutDashboard size={18} />} label="Dashboard" />
-          <NavLink to="/movies" icon={<Film size={18} />} label="Movies" />
+          <NavLink to="/movies" icon={<Film size={18} />} label="Quản lí phim" />
           
           <div className="text-xs uppercase text-gray-500 dark:text-gray-400 font-medium px-4 py-2 mt-4">
             Quản lý
           </div>
-          <NavLink to="/users" icon={<UsersIcon size={18} />} label="Users" />
-          <NavLink to="/bookings" icon={<Ticket size={18} />} label="Bookings" />
-          <NavLink to="/theaters" icon={<Building2 size={18} />} label="Theaters" />
-          <NavLink to="/showtimes" icon={<Calendar size={18} />} label="Showtimes" />
-          <NavLink to="/articles" icon={<Newspaper size={18} />} label="Articles" />
+          <NavLink to="/users" icon={<UsersIcon size={18} />} label="Quản lí tài khoản" />
+          <NavLink to="/bookings" icon={<Ticket size={18} />} label="Quản lí vé" />
+          <NavLink to="/theaters" icon={<Building2 size={18} />} label="Quản lí rạp" />
+          <NavLink to="/showtimes" icon={<Calendar size={18} />} label="Quản lí suất chiếu" />
+          <NavLink to="/genres" icon={<List size={18} />} label="Quản lí thể loại" />
+          <NavLink to="/articles" icon={<Newspaper size={18} />} label="Quản lí bài viết" />
         </nav>
         
         <div className="p-4 border-t border-gray-200/80 dark:border-gray-700/80">

@@ -17,7 +17,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   onImageChange,
   className = '',
   label = 'Tải ảnh lên',
-  folder = 'movieTix',
+  // folder = 'movieTix',
   maxSize = 1000000,
   accept = 'image/*',
   disabled = false
