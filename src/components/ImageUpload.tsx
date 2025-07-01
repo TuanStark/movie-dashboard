@@ -3,7 +3,7 @@ import { Upload, X, Image as ImageIcon, Loader2 } from 'lucide-react';
 
 interface ImageUploadProps {
   initialImage?: string;
-  onImageChange: (imageData: string | File) => void;
+  onImageSelect: (imageData: string | File) => void;
   className?: string;
   label?: string;
   folder?: string;
@@ -14,7 +14,7 @@ interface ImageUploadProps {
 
 const ImageUpload: React.FC<ImageUploadProps> = ({
   initialImage,
-  onImageChange,
+  onImageSelect,
   className = '',
   label = 'Tải ảnh lên',
   // folder = 'movieTix',
@@ -74,7 +74,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
       reader.readAsDataURL(file);
 
       // Pass the actual File object to the parent component
-      onImageChange(file);
+      onImageSelect(file);
     } catch (err: any) {
       console.error('File processing error:', err);
       setError(err.message || 'Có lỗi xảy ra khi xử lý file');
@@ -114,7 +114,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     if (disabled) return;
     e.stopPropagation();
     setPreviewUrl(null);
-    onImageChange('');  // Send empty string when removing image
+    onImageSelect('');  // Send empty string when removing image
     setError(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -131,10 +131,10 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
 
   return (
     <div className={className}>
-      <label className="block text-sm font-medium mb-2">
+      <div className="block text-sm font-medium mb-2">
         {label}
         {!disabled && <span className="text-red-500 ml-1">*</span>}
-      </label>
+      </div>
       
       {previewUrl ? (
         <div className={`relative rounded-lg overflow-hidden group ${disabled ? 'opacity-60' : ''}`}>

@@ -1,14 +1,14 @@
-import { useState, useMemo } from "react";
-import { useMovies } from "../contexts/MovieContext";
+import { useState, useEffect, useMemo } from "react";
 import { Search, Filter, Star, Clock, Calendar, ChevronDown, ChevronUp, Plus, Trash, Edit, Film } from "lucide-react";
 import MovieForm from "../components/movies/MovieForm";
 import MovieDetail from "../components/movies/MovieDetail";
 import DeleteConfirmation from "../components/DeleteConfirmation";
-import type { Movie, Showtime } from "../data/mock-data";
+import type { Movie, Showtime, Genre, MovieGenre } from "../types/global-types";
 import useQuery from "../hooks/useQuery";
+import ServiceApi from "../services/api";
 
 export default function Movies() {
-  const { movies, addMovie, updateMovie, deleteMovie } = useMovies();
+  const [movies, setMovies] = useState<Movie[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortField, setSortField] = useState<"title" | "rating" | "releaseDate">("title");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
@@ -21,10 +21,30 @@ export default function Movies() {
   const [viewingMovie, setViewingMovie] = useState<Movie | null>(null);
   const [deletingMovie, setDeletingMovie] = useState<Movie | null>(null);
 
+  // Fetch movies from API
+  const fetchMovies = async () => {
+    try {
+      const response = await ServiceApi.get('/movies', {
+        params: {
+          page: query.page,
+          limit: query.limit,
+          search: query.search,
+          genre: query.genre !== 'all' ? query.genre : undefined,
+          sort: query.sort,
+          order: query.order,
+          upcoming: query.upcoming
+        }
+      });
+      setMovies(response.data.data.data || []);
+    } catch (error) {
+      console.error('Error fetching movies:', error);
+    }
+  };
+
   // Khởi tạo query và lấy dữ liệu
   const [query, updateQuery, resetQuery] = useQuery({
     page: 1,
-    limit: 5,
+    limit: 10,
     search: searchTerm,
     genre: selectedGenre,
     sort: sortField,
@@ -32,45 +52,36 @@ export default function Movies() {
     upcoming: selectedGenre === "Sắp chiếu" ? true : false,
   });
 
+  // Fetch movies when query changes
+  useEffect(() => {
+    fetchMovies();
+  }, [query]);
+
+  // Helper function to get genre names from MovieGenre objects
+  const getGenreNames = (genres: MovieGenre[]): string[] => {
+    return genres.map(mg => mg.genre?.name || '').filter(name => name !== '');
+  };
+
   // Get unique genres
   const genres = useMemo(() => {
-    const allGenres = movies.flatMap(movie => movie.genres);
+    const allGenres = movies.flatMap(movie => getGenreNames(movie.genres));
     return ["all", ...Array.from(new Set(allGenres))];
   }, [movies]);
 
-  // Filter and sort movies
+  // Filter and sort movies - this is now mostly handled by the API
   const filteredMovies = useMemo(() => {
-    return movies
-      .filter(movie => {
-        const matchesSearch = movie.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                             movie.director.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesGenre = selectedGenre === "all" || movie.genres.includes(selectedGenre);
-        return matchesSearch && matchesGenre;
-      })
-      .sort((a, b) => {
-        if (sortField === "title") {
-          return sortDirection === "asc" 
-            ? a.title.localeCompare(b.title) 
-            : b.title.localeCompare(a.title);
-        } else if (sortField === "rating") {
-          return sortDirection === "asc" 
-            ? a.rating - b.rating 
-            : b.rating - a.rating;
-        } else {
-          return sortDirection === "asc" 
-            ? new Date(a.releaseDate).getTime() - new Date(b.releaseDate).getTime() 
-            : new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime();
-        }
-      });
-  }, [movies, searchTerm, sortField, sortDirection, selectedGenre]);
+    return movies;
+  }, [movies]);
 
   // Toggle sort direction or change sort field
   const handleSort = (field: "title" | "rating" | "releaseDate") => {
     if (sortField === field) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+      updateQuery({ order: sortDirection === "asc" ? "desc" : "asc" });
     } else {
       setSortField(field);
       setSortDirection("asc");
+      updateQuery({ sort: field, order: "asc" });
     }
   };
 
@@ -80,23 +91,54 @@ export default function Movies() {
     return sortDirection === "asc" ? <ChevronUp size={16} /> : <ChevronDown size={16} />;
   };
   
-  // CRUD handlers
-  const handleAddMovie = (movie: Omit<Movie, "id">, showtimes: Omit<Showtime, "id">[]) => {
-    addMovie(movie as Movie, showtimes);
-    setIsAddFormOpen(false);
+  // Handle search term change
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+    updateQuery({ search: e.target.value });
+  };
+
+  // Handle genre change
+  const handleGenreChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const genre = e.target.value;
+    setSelectedGenre(genre);
+    updateQuery({ 
+      genre: genre, 
+      upcoming: genre === "Sắp chiếu" ? true : false 
+    });
   };
   
-  const handleUpdateMovie = (movie: Omit<Movie, "id">, showtimes: Omit<Showtime, "id">[]) => {
-    if (editingMovie) {
-      updateMovie(editingMovie.id, movie as Movie, showtimes);
-      setEditingMovie(null);
+  // CRUD handlers
+  const handleAddMovie = async (movie: Omit<Movie, "id" | "createdAt" | "updatedAt">) => {
+    try {
+      await ServiceApi.post('/movies', movie);
+      setIsAddFormOpen(false);
+      await fetchMovies();
+    } catch (error) {
+      console.error('Error adding movie:', error);
     }
   };
   
-  const handleDeleteMovie = () => {
-    if (deletingMovie) {
-      deleteMovie(deletingMovie.id);
+  const handleUpdateMovie = async (movie: Omit<Movie, "id" | "createdAt" | "updatedAt">) => {
+    if (!editingMovie) return;
+    
+    try {
+      await ServiceApi.put(`/movies/${editingMovie.id}`, movie);
+      setEditingMovie(null);
+      await fetchMovies();
+    } catch (error) {
+      console.error('Error updating movie:', error);
+    }
+  };
+  
+  const handleDeleteMovie = async () => {
+    if (!deletingMovie) return;
+    
+    try {
+      await ServiceApi.delete(`/movies/${deletingMovie.id}`);
       setDeletingMovie(null);
+      await fetchMovies();
+    } catch (error) {
+      console.error('Error deleting movie:', error);
     }
   };
 
@@ -143,7 +185,7 @@ export default function Movies() {
               placeholder="Tìm kiếm phim..."
               className="w-full py-2.5 pl-10 pr-4 rounded-xl bg-gray-50/80 dark:bg-gray-700/80 border-none focus:ring-2 focus:ring-primary-500/70 transition-all"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={handleSearchChange}
             />
           </div>
           <div className="flex-shrink-0">
@@ -151,7 +193,7 @@ export default function Movies() {
               <select
                 className="appearance-none bg-gray-50/80 dark:bg-gray-700/80 border-none rounded-xl py-2.5 pl-4 pr-10 focus:ring-2 focus:ring-primary-500/70 transition-all"
                 value={selectedGenre}
-                onChange={(e) => setSelectedGenre(e.target.value)}
+                onChange={handleGenreChange}
               >
                 {genres.map((genre) => (
                   <option key={genre} value={genre}>
@@ -165,7 +207,15 @@ export default function Movies() {
         </div>
       </div>
 
-      {viewMode === "grid" ? (
+      {/* Empty state */}
+      {filteredMovies.length === 0 && (
+        <div className="col-span-full text-center py-12 glass-card rounded-xl">
+          <Film size={40} className="text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+          <p className="text-gray-500 dark:text-gray-400">Không tìm thấy phim nào</p>
+        </div>
+      )}
+
+      {viewMode === "grid" && filteredMovies.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredMovies.map((movie) => (
             <div 
@@ -223,12 +273,12 @@ export default function Movies() {
                   <span>{movie.releaseDate}</span>
                 </div>
                 <div className="flex flex-wrap gap-1.5 mt-2">
-                  {movie.genres.slice(0, 2).map((genre, idx) => (
+                  {getGenreNames(movie.genres).slice(0, 2).map((genreName, index) => (
                     <span
-                      key={idx}
+                      key={`${movie.id}-genre-${index}`}
                       className="px-2.5 py-1 bg-gray-100/80 dark:bg-gray-700/80 rounded-full text-xs font-medium"
                     >
-                      {genre}
+                      {genreName}
                     </span>
                   ))}
                   {movie.genres.length > 2 && (
@@ -241,7 +291,9 @@ export default function Movies() {
             </div>
           ))}
         </div>
-      ) : (
+      )}
+
+      {viewMode === "list" && filteredMovies.length > 0 && (
         <div className="card overflow-hidden">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50/80 dark:bg-gray-800/80 backdrop-blur-sm">
@@ -251,21 +303,17 @@ export default function Movies() {
                     className="flex items-center focus:outline-none"
                     onClick={() => handleSort("title")}
                   >
-                    Tên phim {renderSortIndicator("title")}
+                    Tên phim
+                    {renderSortIndicator("title")}
                   </button>
-                </th>
-                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Thể loại
-                </th>
-                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Đạo diễn
                 </th>
                 <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   <button
                     className="flex items-center focus:outline-none"
                     onClick={() => handleSort("releaseDate")}
                   >
-                    Ngày chiếu {renderSortIndicator("releaseDate")}
+                    Ngày phát hành
+                    {renderSortIndicator("releaseDate")}
                   </button>
                 </th>
                 <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -273,75 +321,77 @@ export default function Movies() {
                     className="flex items-center focus:outline-none"
                     onClick={() => handleSort("rating")}
                   >
-                    Đánh giá {renderSortIndicator("rating")}
+                    Đánh giá
+                    {renderSortIndicator("rating")}
                   </button>
                 </th>
-                <th className="py-3 px-4 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Thể loại
+                </th>
+                <th className="py-3 px-4 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Thao tác
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {filteredMovies.map((movie) => (
-                <tr 
-                  key={movie.id} 
-                  className="hover:bg-gray-50/90 dark:hover:bg-gray-700/90 transition-colors"
-                  onClick={() => setViewingMovie(movie)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <td className="py-4 px-4">
+                <tr key={movie.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                  <td className="py-4 px-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <img
-                        src={movie.posterPath}
-                        alt={movie.title}
-                        className="w-10 h-14 object-cover rounded-md mr-3 shadow-md"
-                      />
+                      <div className="h-10 w-7 flex-shrink-0 mr-4">
+                        <img className="h-10 w-7 object-cover rounded" src={movie.posterPath} alt="" />
+                      </div>
                       <div>
-                        <div className="font-medium">{movie.title}</div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">{movie.duration}</div>
+                        <div className="text-sm font-medium">{movie.title}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">{movie.director}</div>
                       </div>
                     </div>
                   </td>
+                  <td className="py-4 px-4 whitespace-nowrap">
+                    <div className="text-sm">{movie.releaseDate}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">{movie.duration}</div>
+                  </td>
+                  <td className="py-4 px-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <Star size={14} fill="#FFD700" className="mr-1" />
+                      <span className="text-sm">{movie.rating}</span>
+                    </div>
+                  </td>
                   <td className="py-4 px-4">
-                    <div className="flex flex-wrap gap-1.5">
-                      {movie.genres.map((genre, idx) => (
+                    <div className="flex flex-wrap gap-1">
+                      {getGenreNames(movie.genres).slice(0, 2).map((genreName, index) => (
                         <span
-                          key={idx}
-                          className="inline-block px-2.5 py-1 text-xs rounded-full bg-gray-100/80 dark:bg-gray-700/80"
+                          key={`${movie.id}-list-genre-${index}`}
+                          className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded-full text-xs"
                         >
-                          {genre}
+                          {genreName}
                         </span>
                       ))}
-                    </div>
-                  </td>
-                  <td className="py-4 px-4">{movie.director}</td>
-                  <td className="py-4 px-4">
-                    <div className="flex items-center">
-                      {movie.upcoming && (
-                        <span className="inline-block mr-2 px-2.5 py-1 text-xs rounded-full bg-primary-100/80 text-primary-600 dark:bg-primary-900/30 dark:text-primary-300">
-                          Sắp chiếu
+                      {movie.genres.length > 2 && (
+                        <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded-full text-xs">
+                          +{movie.genres.length - 2}
                         </span>
                       )}
-                      {movie.releaseDate}
                     </div>
                   </td>
-                  <td className="py-4 px-4">
-                    <div className="flex items-center">
-                      <Star size={16} fill="#FFD700" className="mr-1 text-yellow-500" />
-                      <span>{movie.rating}</span>
-                    </div>
-                  </td>
-                  <td className="py-4 px-4 text-right">
-                    <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                      <button 
-                        className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  <td className="py-4 px-4 whitespace-nowrap text-center">
+                    <div className="flex justify-center gap-2">
+                      <button
+                        onClick={() => setViewingMovie(movie)}
+                        className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
+                      >
+                        <span className="sr-only">View</span>
+                        <i className="fas fa-eye"></i>
+                      </button>
+                      <button
                         onClick={() => setEditingMovie(movie)}
+                        className="p-1.5 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-md transition-colors"
                       >
                         <Edit size={16} />
                       </button>
-                      <button 
-                        className="p-1.5 rounded-full hover:bg-error-50 dark:hover:bg-error-900/20 text-error-500 transition-colors"
+                      <button
                         onClick={() => setDeletingMovie(movie)}
+                        className="p-1.5 text-error-500 hover:bg-error-50 dark:hover:bg-error-900/20 rounded-md transition-colors"
                       >
                         <Trash size={16} />
                       </button>
@@ -354,12 +404,6 @@ export default function Movies() {
         </div>
       )}
 
-      {filteredMovies.length === 0 && (
-        <div className="text-center py-12 glass-card rounded-xl">
-          <p className="text-gray-500 dark:text-gray-400">Không tìm thấy phim phù hợp với tiêu chí tìm kiếm</p>
-        </div>
-      )}
-      
       {/* Add Movie Form */}
       {isAddFormOpen && (
         <MovieForm
@@ -367,7 +411,7 @@ export default function Movies() {
           onCancel={() => setIsAddFormOpen(false)}
         />
       )}
-      
+
       {/* Edit Movie Form */}
       {editingMovie && (
         <MovieForm
@@ -376,8 +420,8 @@ export default function Movies() {
           onCancel={() => setEditingMovie(null)}
         />
       )}
-      
-      {/* View Movie Details */}
+
+      {/* View Movie Detail */}
       {viewingMovie && (
         <MovieDetail
           movie={viewingMovie}
@@ -392,12 +436,12 @@ export default function Movies() {
           }}
         />
       )}
-      
+
       {/* Delete Confirmation */}
       {deletingMovie && (
         <DeleteConfirmation
           title="Xóa phim"
-          message={`Bạn có chắc chắn muốn xóa phim "${deletingMovie.title}"? Hành động này không thể hoàn tác.`}
+          message="Bạn có chắc chắn muốn xóa phim này? Hành động này không thể hoàn tác."
           onConfirm={handleDeleteMovie}
           onCancel={() => setDeletingMovie(null)}
         />

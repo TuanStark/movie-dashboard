@@ -1,8 +1,13 @@
-import React, { useState } from 'react';
-import type { Movie } from '../../data/mock-data';
+import React, { useState, useEffect } from 'react';
+import type { Movie, Showtime, MovieGenre } from '../../types/global-types';
 import { X, Star, Clock, Calendar, Video, ExternalLink, MapPin, DollarSign, Calendar as CalendarIcon } from 'lucide-react';
-import { useShowtimes } from '../../contexts/ShowtimeContext';
-import { theaters } from '../../data/mock-data';
+import ServiceApi from '../../services/api';
+
+interface Theater {
+  id: number;
+  name: string;
+  location: string;
+}
 
 interface MovieDetailProps {
   movie: Movie;
@@ -12,17 +17,44 @@ interface MovieDetailProps {
 }
 
 const MovieDetail: React.FC<MovieDetailProps> = ({ movie, onClose, onEdit, onDelete }) => {
-  const { getShowtimesByMovie, getTheatersByMovie } = useShowtimes();
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [movieShowtimes, setMovieShowtimes] = useState<Showtime[]>([]);
+  const [theaters, setTheaters] = useState<Theater[]>([]);
   
-  const movieShowtimes = getShowtimesByMovie(movie.id);
-  const movieTheaters = getTheatersByMovie(movie.id);
+  // Helper function to get genre names
+  const getGenreNames = (genres: MovieGenre[]): string[] => {
+    return genres.map(mg => mg.genre?.name || '').filter(name => name !== '');
+  };
+
+  // Fetch showtimes and theaters
+  useEffect(() => {
+    const fetchShowtimes = async () => {
+      try {
+        const response = await ServiceApi.get(`/showtimes/movie/${movie.id}`);
+        setMovieShowtimes(response.data.data.data || []);
+      } catch (error) {
+        console.error('Error fetching showtimes:', error);
+      }
+    };
+    
+    const fetchTheaters = async () => {
+      try {
+        const response = await ServiceApi.get('/theaters');
+        setTheaters(response.data.data.data || []);
+      } catch (error) {
+        console.error('Error fetching theaters:', error);
+      }
+    };
+    
+    fetchShowtimes();
+    fetchTheaters();
+  }, [movie.id]);
   
   // Lấy danh sách các ngày có suất chiếu của phim
   const availableDates = [...new Set(movieShowtimes.map(showtime => showtime.date))].sort();
   
   // Nếu chưa chọn ngày, chọn ngày đầu tiên
-  React.useEffect(() => {
+  useEffect(() => {
     if (availableDates.length > 0 && !selectedDate) {
       setSelectedDate(availableDates[0]);
     }
@@ -42,6 +74,8 @@ const MovieDetail: React.FC<MovieDetailProps> = ({ movie, onClose, onEdit, onDel
     acc[theaterId].push(showtime);
     return acc;
   }, {} as Record<number, typeof filteredShowtimes>);
+
+  const genreNames = getGenreNames(movie.genres);
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -90,12 +124,12 @@ const MovieDetail: React.FC<MovieDetailProps> = ({ movie, onClose, onEdit, onDel
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2 mt-2">
-                  {movie.genres.map((genre) => (
+                  {genreNames.map((genreName, index) => (
                     <span 
-                      key={genre} 
+                      key={`genre-detail-${index}`} 
                       className="px-2 py-1 bg-white/20 rounded-full text-xs"
                     >
-                      {genre}
+                      {genreName}
                     </span>
                   ))}
                 </div>
@@ -206,7 +240,7 @@ const MovieDetail: React.FC<MovieDetailProps> = ({ movie, onClose, onEdit, onDel
                               <span className="text-sm text-gray-400 dark:text-gray-500">|</span>
                               <div className="flex items-center text-success-600 dark:text-success-400">
                                 <DollarSign size={14} />
-                                <span>{showtime.price.toFixed(2)}</span>
+                                <span>{showtime.price.toLocaleString('vi-VN')}</span>
                               </div>
                             </div>
                           ))}

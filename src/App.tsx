@@ -12,6 +12,7 @@ import Theaters from "./pages/Theaters";
 import Showtimes from "./pages/Showtimes";
 import Articles from "./pages/Articles";
 import Genres from "./pages/Genres";
+import Actors from "./pages/Actors";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -57,6 +58,7 @@ function App() {
                         <Route path="theaters" element={<Theaters />} />
                         <Route path="showtimes" element={<Showtimes />} />
                         <Route path="genres" element={<Genres />} />
+                        <Route path="actors" element={<Actors />} />
                         <Route path="articles" element={<Articles />} />
                       </Route>
                     </Routes>

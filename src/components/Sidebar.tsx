@@ -104,6 +104,7 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
           <NavLink to="/theaters" icon={<Building2 size={18} />} label="Quản lí rạp" />
           <NavLink to="/showtimes" icon={<Calendar size={18} />} label="Quản lí suất chiếu" />
           <NavLink to="/genres" icon={<List size={18} />} label="Quản lí thể loại" />
+          <NavLink to="/actors" icon={<User size={18} />} label="Quản lí diễn viên" />
           <NavLink to="/articles" icon={<Newspaper size={18} />} label="Quản lí bài viết" />
         </nav>
         
