@@ -49,9 +49,12 @@ export interface User {
   lastName: string;
   email: string;
   password: string;
-  role: 'user' | 'admin';
+  role: string;
   avatar?: string;
-  bookings: number[];
+  status?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  bookings?: number[];
 }
 
 export interface Booking {

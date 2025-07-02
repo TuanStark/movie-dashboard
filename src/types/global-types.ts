@@ -54,3 +54,16 @@ export interface Showtime {
   createdAt?: string;
   updatedAt?: string;
 }
+
+export interface User {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  role: string;
+  avatar: string;
+  status: string;
+  createdAt?: string;
+  updatedAt?: string;
+}

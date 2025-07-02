@@ -68,17 +68,17 @@ const TheaterForm: React.FC<TheaterFormProps> = ({ theater, onSubmit, onCancel }
   };
 
   const handleImageChange = (imageData: string | File) => {
-    if (imageData instanceof File) {
+    if (typeof imageData === 'string') {
       setFormData({
         ...formData,
-        logoFile: imageData,
-        logo: '', // Clear the image URL when a new file is selected
+        logoFile: null,
+        logo: imageData,
       });
     } else {
       setFormData({
         ...formData,
-        logoFile: null,
-        logo: imageData, // Set the image URL
+        logoFile: imageData,
+        logo: URL.createObjectURL(imageData),
       });
     }
   };
@@ -281,7 +281,7 @@ const TheaterForm: React.FC<TheaterFormProps> = ({ theater, onSubmit, onCancel }
             <div className="space-y-2">
               <ImageUpload
                 initialImage={formData.logo}
-                onImageChange={handleImageChange}
+                onImageSelect={handleImageChange}
                 label="Logo rạp"
                 folder="movieTix"
                 maxSize={1000000} // 1MB

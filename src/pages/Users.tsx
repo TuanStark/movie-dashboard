@@ -1,19 +1,31 @@
-import React, { useState } from 'react';
-import { useUsers } from '../contexts/UserContext';
-import { Search, Plus, Filter, MoreVertical, Edit, Trash, User as UserIcon, Users as UsersIcon, Mail, Shield, Tag } from 'lucide-react';
-import UserForm from '../components/UserForm';
-import UserDetail from '../components/UserDetail';
-import DeleteConfirmation from '../components/DeleteConfirmation';
+import React, { useEffect, useState } from 'react';
+import { Search, Filter, MoreVertical, Edit, Trash, User as UserIcon, Users as UsersIcon, Mail, Shield } from 'lucide-react';
+import UserForm from '../components/users/UserForm';
+import UserDetail from '../components/users/UserDetail';
+import ServiceApi from '../services/api';
+import type { User } from '../types/global-types';
+import DeleteChangeStatus from '../components/DeleteChangeStatus';
 
 const Users: React.FC = () => {
-  const { users, addUser, updateUser, deleteUser, getUser } = useUsers();
-  
+  const [users, setUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState<string>('all');
-  const [showAddForm, setShowAddForm] = useState(false);
   const [editingUserId, setEditingUserId] = useState<number | null>(null);
   const [viewingUserId, setViewingUserId] = useState<number | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<number | null>(null);
+
+  const fetchUsers = async () => {
+    try {
+      const response = await ServiceApi.get('/user/all');
+      setUsers(response.data.data.data);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  }
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
 
   // Lọc users theo tìm kiếm và vai trò
   const filteredUsers = users.filter(user => {
@@ -27,20 +39,15 @@ const Users: React.FC = () => {
     return matchesSearch && matchesRole;
   });
 
-  const handleAddUser = (userData: Omit<typeof users[0], 'id'>) => {
-    addUser(userData);
-    setShowAddForm(false);
-  };
-
-  const handleUpdateUser = (id: number, userData: Omit<typeof users[0], 'id'>) => {
-    updateUser(id, userData);
+  const handleUpdateUser = async (id: number, userData: Omit<User, 'id'>) => {
     setEditingUserId(null);
+    await fetchUsers();
   };
 
-  const handleDeleteUser = () => {
+  const handleDeleteUser = async () => {
     if (deletingUserId !== null) {
-      deleteUser(deletingUserId);
       setDeletingUserId(null);
+      await fetchUsers();
     }
   };
 
@@ -53,13 +60,6 @@ const Users: React.FC = () => {
           </div>
           <h1 className="text-2xl font-bold gradient-text">Quản lý người dùng</h1>
         </div>
-        <button
-          onClick={() => setShowAddForm(true)}
-          className="btn btn-primary flex items-center gap-2 hover-lift"
-        >
-          <Plus size={18} />
-          <span>Thêm người dùng</span>
-        </button>
       </div>
 
       <div className="glass-card rounded-xl p-6 mb-6">
@@ -85,8 +85,8 @@ const Users: React.FC = () => {
               className="pl-10 pr-4 py-2.5 w-full border-none rounded-xl bg-gray-50/80 dark:bg-gray-700/80 appearance-none focus:ring-2 focus:ring-primary-500/70 transition-all"
             >
               <option value="all">Tất cả vai trò</option>
-              <option value="user">Người dùng</option>
-              <option value="admin">Quản trị viên</option>
+              <option value="USER">Người dùng</option>
+              <option value="ADMIN">Quản trị viên</option>
             </select>
           </div>
         </div>
@@ -99,7 +99,7 @@ const Users: React.FC = () => {
                 <th className="px-6 py-3.5 rounded-tl-xl">Người dùng</th>
                 <th className="px-6 py-3.5">Email</th>
                 <th className="px-6 py-3.5">Vai trò</th>
-                <th className="px-6 py-3.5">Đặt vé</th>
+                <th className="px-6 py-3.5">Trạng thái</th>
                 <th className="px-6 py-3.5 text-right rounded-tr-xl">Thao tác</th>
               </tr>
             </thead>
@@ -139,7 +139,7 @@ const Users: React.FC = () => {
                             : 'bg-gray-100/80 dark:bg-gray-700/80 text-gray-800 dark:text-gray-300'
                         }`}
                       >
-                        {user.role === 'admin' ? (
+                        {user.role === 'ADMIN' ? (
                           <>
                             <Shield size={12} />
                             Quản trị viên
@@ -153,12 +153,15 @@ const Users: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex items-center gap-1.5">
-                        <Tag size={16} className="text-gray-400" />
-                        <span className="bg-gray-100/80 dark:bg-gray-700/80 px-2.5 py-0.5 rounded-full text-xs">
-                          {user.bookings?.length || 0}
-                        </span>
-                      </div>
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+                          user.status === 'active'
+                            ? 'bg-green-100/80 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+                            : 'bg-red-100/80 dark:bg-red-900/30 text-red-800 dark:text-red-300'
+                        }`}
+                      >
+                        {user.status === 'active' ? 'Hoạt động' : 'Khoá'}
+                      </span>
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2">
@@ -199,18 +202,11 @@ const Users: React.FC = () => {
         </div>
       </div>
 
-      {/* Add User Form */}
-      {showAddForm && (
-        <UserForm
-          onSubmit={handleAddUser}
-          onCancel={() => setShowAddForm(false)}
-        />
-      )}
 
       {/* Edit User Form */}
       {editingUserId !== null && (
         <UserForm
-          user={getUser(editingUserId)}
+          user={users.find(user => user.id === editingUserId)!}
           onSubmit={(userData) => handleUpdateUser(editingUserId, userData)}
           onCancel={() => setEditingUserId(null)}
         />
@@ -219,26 +215,20 @@ const Users: React.FC = () => {
       {/* View User Detail */}
       {viewingUserId !== null && (
         <UserDetail
-          user={getUser(viewingUserId)!}
+          user={users.find(user => user.id === viewingUserId)!}
           onClose={() => setViewingUserId(null)}
-          onEdit={() => {
-            setEditingUserId(viewingUserId);
-            setViewingUserId(null);
-          }}
-          onDelete={() => {
-            setDeletingUserId(viewingUserId);
-            setViewingUserId(null);
-          }}
         />
       )}
 
       {/* Delete Confirmation */}
       {deletingUserId !== null && (
-        <DeleteConfirmation
+        <DeleteChangeStatus
           title="Xóa người dùng"
           message="Bạn có chắc chắn muốn xóa người dùng này? Hành động này không thể hoàn tác."
           onConfirm={handleDeleteUser}
           onCancel={() => setDeletingUserId(null)}
+          status="inactive"
+          id={deletingUserId}
         />
       )}
     </div>
