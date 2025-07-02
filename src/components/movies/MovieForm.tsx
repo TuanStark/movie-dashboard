@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { Movie, Showtime, Genre, MovieGenre, Actor } from '../../types/global-types';
-import { X, Plus, Trash, Clock } from 'lucide-react';
+import { X, Plus, Trash, Clock, Film, Calendar, Star, Users, Video, Tag } from 'lucide-react';
 import ImageUpload from '../ImageUpload';
 import ServiceApi from '../../services/api';
 
@@ -328,11 +328,16 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50" style={{ marginTop: '0px' }}>
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-          <h2 className="text-xl font-semibold">
-            {movie ? 'Chỉnh sửa phim' : 'Thêm phim mới'}
-          </h2>
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-primary-50 dark:bg-primary-900/30">
+              <Film size={24} className="text-primary-500" />
+            </div>
+            <h2 className="text-xl font-semibold">
+              {movie ? 'Chỉnh sửa phim' : 'Thêm phim mới'}
+            </h2>
+          </div>
           <button 
             onClick={onCancel}
             className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -341,156 +346,160 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
           </button>
         </div>
         
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Title */}
-            <div className="space-y-2">
-              <label htmlFor="title" className="block text-sm font-medium">
-                Tên phim <span className="text-error-500">*</span>
-              </label>
-              <input
-                type="text"
-                id="title"
-                name="title"
-                value={formData.title}
-                onChange={handleChange}
-                className={`w-full rounded-lg border-gray-300 dark:bg-gray-700 dark:border-gray-600 ${
-                  errors.title ? 'border-error-500 focus:ring-error-500' : ''
-                }`}
-                placeholder="Nhập tên phim"
-              />
-              {errors.title && (
-                <p className="text-error-500 text-sm">{errors.title}</p>
-              )}
+        <form onSubmit={handleSubmit} className="p-6 space-y-8">
+          {/* Basic Information Section */}
+          <div className="space-y-6">
+            <div className="flex items-center gap-2 text-lg font-medium text-gray-800 dark:text-gray-200">
+              <Film size={20} />
+              <h3>Thông tin cơ bản</h3>
             </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Title */}
+              <div className="space-y-2">
+                <label htmlFor="title" className="block text-sm font-medium">
+                  Tên phim <span className="text-error-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="title"
+                  name="title"
+                  value={formData.title}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-2.5 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 ${
+                    errors.title ? 'border-2 border-error-500' : ''
+                  }`}
+                  placeholder="Nhập tên phim"
+                />
+                {errors.title && (
+                  <p className="text-error-500 text-sm">{errors.title}</p>
+                )}
+              </div>
 
-            {/* Director */}
-            <div className="space-y-2">
-              <label htmlFor="director" className="block text-sm font-medium">
-                Đạo diễn <span className="text-error-500">*</span>
-              </label>
-              <input
-                type="text"
-                id="director"
-                name="director"
-                value={formData.director}
-                onChange={handleChange}
-                className={`w-full rounded-lg border-gray-300 dark:bg-gray-700 dark:border-gray-600 ${
-                  errors.director ? 'border-error-500 focus:ring-error-500' : ''
-                }`}
-                placeholder="Nhập tên đạo diễn"
-              />
-              {errors.director && (
-                <p className="text-error-500 text-sm">{errors.director}</p>
-              )}
+              {/* Director */}
+              <div className="space-y-2">
+                <label htmlFor="director" className="block text-sm font-medium">
+                  Đạo diễn <span className="text-error-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="director"
+                  name="director"
+                  value={formData.director}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-2.5 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 ${
+                    errors.director ? 'border-2 border-error-500' : ''
+                  }`}
+                  placeholder="Nhập tên đạo diễn"
+                />
+                {errors.director && (
+                  <p className="text-error-500 text-sm">{errors.director}</p>
+                )}
+              </div>
+
+              {/* Duration */}
+              <div className="space-y-2">
+                <label htmlFor="duration" className="block text-sm font-medium">
+                  Thời lượng <span className="text-error-500">*</span>
+                </label>
+                <div className="relative">
+                  <Clock size={16} className="absolute left-3 top-3 text-gray-400" />
+                  <input
+                    type="text"
+                    id="duration"
+                    name="duration"
+                    value={formData.duration}
+                    onChange={handleChange}
+                    className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-primary-500"
+                    placeholder="Ví dụ: 2h 30m"
+                  />
+                </div>
+              </div>
+
+              {/* Release Date */}
+              <div className="space-y-2">
+                <label htmlFor="releaseDate" className="block text-sm font-medium">
+                  Ngày phát hành <span className="text-error-500">*</span>
+                </label>
+                <div className="relative">
+                  <Calendar size={16} className="absolute left-3 top-3 text-gray-400" />
+                  <input
+                    type="date"
+                    id="releaseDate"
+                    name="releaseDate"
+                    value={formData.releaseDate}
+                    onChange={handleChange}
+                    className={`w-full pl-10 pr-4 py-2.5 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 ${
+                      errors.releaseDate ? 'border-2 border-error-500' : ''
+                    }`}
+                  />
+                </div>
+                {errors.releaseDate && (
+                  <p className="text-error-500 text-sm">{errors.releaseDate}</p>
+                )}
+              </div>
+
+              {/* Rating */}
+              <div className="space-y-2">
+                <label htmlFor="rating" className="block text-sm font-medium">
+                  Đánh giá (0-10)
+                </label>
+                <div className="relative">
+                  <Star size={16} className="absolute left-3 top-3 text-gray-400" />
+                  <input
+                    type="number"
+                    id="rating"
+                    name="rating"
+                    min="0"
+                    max="10"
+                    step="0.1"
+                    value={formData.rating}
+                    onChange={handleChange}
+                    className={`w-full pl-10 pr-4 py-2.5 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 ${
+                      errors.rating ? 'border-2 border-error-500' : ''
+                    }`}
+                    placeholder="Nhập điểm đánh giá"
+                  />
+                </div>
+                {errors.rating && (
+                  <p className="text-error-500 text-sm">{errors.rating}</p>
+                )}
+              </div>
+
+              {/* Trailer URL */}
+              <div className="space-y-2">
+                <label htmlFor="trailerUrl" className="block text-sm font-medium">
+                  URL Trailer
+                </label>
+                <div className="relative">
+                  <Video size={16} className="absolute left-3 top-3 text-gray-400" />
+                  <input
+                    type="url"
+                    id="trailerUrl"
+                    name="trailerUrl"
+                    value={formData.trailerUrl}
+                    onChange={handleChange}
+                    className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-primary-500"
+                    placeholder="https://www.youtube.com/watch?v="
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Duration */}
-            <div className="space-y-2">
-              <label htmlFor="duration" className="block text-sm font-medium">
-                Thời lượng
-              </label>
-              <input
-                type="text"
-                id="duration"
-                name="duration"
-                value={formData.duration}
-                onChange={handleChange}
-                className="w-full rounded-lg border-gray-300 dark:bg-gray-700 dark:border-gray-600"
-                placeholder="Ví dụ: 2h 30m"
-              />
+          {/* Genres Section */}
+          <div className="space-y-6">
+            <div className="flex items-center gap-2 text-lg font-medium text-gray-800 dark:text-gray-200">
+              <Tag size={20} />
+              <h3>Thể loại</h3>
             </div>
 
-            {/* Release Date */}
-            <div className="space-y-2">
-              <label htmlFor="releaseDate" className="block text-sm font-medium">
-                Ngày phát hành <span className="text-error-500">*</span>
-              </label>
-              <input
-                type="date"
-                id="releaseDate"
-                name="releaseDate"
-                value={formData.releaseDate}
-                onChange={handleChange}
-                className={`w-full rounded-lg border-gray-300 dark:bg-gray-700 dark:border-gray-600 ${
-                  errors.releaseDate ? 'border-error-500 focus:ring-error-500' : ''
-                }`}
-              />
-              {errors.releaseDate && (
-                <p className="text-error-500 text-sm">{errors.releaseDate}</p>
-              )}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Rating */}
-            <div className="space-y-2">
-              <label htmlFor="rating" className="block text-sm font-medium">
-                Đánh giá (0-10)
-              </label>
-              <input
-                type="number"
-                id="rating"
-                name="rating"
-                min="0"
-                max="10"
-                step="0.1"
-                value={formData.rating}
-                onChange={handleChange}
-                className={`w-full rounded-lg border-gray-300 dark:bg-gray-700 dark:border-gray-600 ${
-                  errors.rating ? 'border-error-500 focus:ring-error-500' : ''
-                }`}
-              />
-              {errors.rating && (
-                <p className="text-error-500 text-sm">{errors.rating}</p>
-              )}
-            </div>
-
-            {/* Upcoming */}
-            <div className="flex items-center h-full mt-8">
-              <input
-                type="checkbox"
-                id="upcoming"
-                name="upcoming"
-                checked={formData.upcoming}
-                onChange={handleChange}
-                className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600"
-              />
-              <label htmlFor="upcoming" className="ml-2 block text-sm">
-                Đánh dấu là phim sắp chiếu
-              </label>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Trailer URL */}
-            <div className="space-y-2">
-              <label htmlFor="trailerUrl" className="block text-sm font-medium">
-                URL Trailer
-              </label>
-              <input
-                type="url"
-                id="trailerUrl"
-                name="trailerUrl"
-                value={formData.trailerUrl}
-                onChange={handleChange}
-                className="w-full rounded-lg border-gray-300 dark:bg-gray-700 dark:border-gray-600"
-                placeholder="https://www.youtube.com/watch?v="
-              />
-            </div>
-
-            {/* Genres */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium">
-                Thể loại <span className="text-error-500">*</span>
-              </label>
-              <div className="flex">
+            <div className="space-y-4">
+              <div className="flex gap-3">
                 <select
                   value={genreInput}
                   onChange={(e) => setGenreInput(e.target.value)}
-                  className="flex-1 rounded-l-lg border-gray-300 dark:bg-gray-700 dark:border-gray-600"
+                  className="flex-1 px-4 py-2.5 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-primary-500"
                 >
                   <option value="">Chọn thể loại</option>
                   {availableGenres.map((genre) => (
@@ -504,27 +513,28 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
                 <button
                   type="button"
                   onClick={handleAddGenre}
-                  className="px-4 bg-primary-600 text-white rounded-r-lg hover:bg-primary-700"
+                  className="px-4 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors flex items-center gap-2"
                 >
                   <Plus size={16} />
+                  Thêm
                 </button>
               </div>
               {errors.genres && (
                 <p className="text-error-500 text-sm">{errors.genres}</p>
               )}
-              <div className="flex flex-wrap gap-2 mt-2">
+              <div className="flex flex-wrap gap-2">
                 {getGenreNames(formData.genres).map((genreName, index) => (
                   <span
                     key={`genre-${index}`}
-                    className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700"
+                    className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300"
                   >
                     {genreName}
                     <button
                       type="button"
                       onClick={() => handleRemoveGenre(genreName)}
-                      className="ml-1.5 text-gray-500 hover:text-error-500"
+                      className="ml-2 text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-200"
                     >
-                      <X size={12} />
+                      <X size={14} />
                     </button>
                   </span>
                 ))}
@@ -532,17 +542,19 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Cast */}
-            <div className="space-y-2 col-span-1 md:col-span-2">
-              <label className="block text-sm font-medium">
-                Diễn viên
-              </label>
-              <div className="flex">
+          {/* Cast Section */}
+          <div className="space-y-6">
+            <div className="flex items-center gap-2 text-lg font-medium text-gray-800 dark:text-gray-200">
+              <Users size={20} />
+              <h3>Diễn viên</h3>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex gap-3">
                 <select
                   value={castInput}
                   onChange={(e) => setCastInput(e.target.value)}
-                  className="flex-1 rounded-l-lg border-gray-300 dark:bg-gray-700 dark:border-gray-600"
+                  className="flex-1 px-4 py-2.5 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-primary-500"
                 >
                   <option value="">Chọn diễn viên</option>
                   {availableActors.map((actor) => (
@@ -556,24 +568,25 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
                 <button
                   type="button"
                   onClick={handleAddCastMember}
-                  className="px-4 bg-primary-600 text-white rounded-r-lg hover:bg-primary-700"
+                  className="px-4 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors flex items-center gap-2"
                 >
                   <Plus size={16} />
+                  Thêm
                 </button>
               </div>
-              <div className="flex flex-wrap gap-2 mt-2">
+              <div className="flex flex-wrap gap-2">
                 {formData.cast.map((castMember, index) => (
                   <span
                     key={index}
-                    className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700"
+                    className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
                   >
                     {castMember}
                     <button
                       type="button"
                       onClick={() => handleRemoveCastMember(castMember)}
-                      className="ml-1.5 text-gray-500 hover:text-error-500"
+                      className="ml-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                     >
-                      <X size={12} />
+                      <X size={14} />
                     </button>
                   </span>
                 ))}
@@ -582,183 +595,83 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
           </div>
 
           {/* Synopsis */}
-          <div className="space-y-2">
-            <label htmlFor="synopsis" className="block text-sm font-medium">
-              Tóm tắt nội dung
-            </label>
+          <div className="space-y-6">
+            <div className="flex items-center gap-2 text-lg font-medium text-gray-800 dark:text-gray-200">
+              <div>Tóm tắt nội dung</div>
+            </div>
+            
             <textarea
               id="synopsis"
               name="synopsis"
               rows={4}
               value={formData.synopsis}
               onChange={handleChange}
-              className="w-full rounded-lg border-gray-300 dark:bg-gray-700 dark:border-gray-600"
+              className="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-primary-500"
               placeholder="Nhập tóm tắt nội dung phim"
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Poster Image Upload */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium">
-                Poster phim <span className="text-error-500">*</span>
-              </label>
-              <ImageUpload
-                initialImage={formData.posterPath}
-                onImageSelect={handlePosterChange}
-              />
-              {errors.posterPath && (
-                <p className="text-error-500 text-sm">{errors.posterPath}</p>
-              )}
+          {/* Images Section */}
+          <div className="space-y-6">
+            <div className="flex items-center gap-2 text-lg font-medium text-gray-800 dark:text-gray-200">
+              <div>Hình ảnh</div>
             </div>
 
-            {/* Backdrop Image Upload */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium">
-                Ảnh nền (backdrop)
-              </label>
-              <ImageUpload
-                initialImage={formData.backdropPath}
-                onImageSelect={handleBackdropChange}
-              />
-            </div>
-          </div>
-
-          {/* Showtimes Section */}
-          <div className="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium">Suất chiếu</h3>
-              <button
-                type="button"
-                onClick={handleAddShowtime}
-                className="btn btn-primary btn-sm flex items-center gap-1.5"
-              >
-                <Plus size={16} />
-                Thêm suất chiếu
-              </button>
-            </div>
-
-            {showtimes.length === 0 && (
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Chưa có suất chiếu nào cho phim này.
-              </p>
-            )}
-
-            {showtimes.map((showtime, index) => (
-              <div
-                key={index}
-                className="glass-card p-4 rounded-lg mb-3 relative"
-              >
-                <button
-                  type="button"
-                  onClick={() => handleRemoveShowtime(index)}
-                  className="absolute top-2 right-2 p-1 text-gray-500 hover:text-error-500"
-                >
-                  <Trash size={16} />
-                </button>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {/* Theater */}
-                  <div>
-                    <label className="block text-xs font-medium mb-1">
-                      Rạp chiếu <span className="text-error-500">*</span>
-                    </label>
-                    <select
-                      value={showtime.theaterId}
-                      onChange={(e) => handleShowtimeChange(index, 'theaterId', Number(e.target.value))}
-                      className={`w-full rounded-lg border-gray-300 dark:bg-gray-700 dark:border-gray-600 text-sm ${
-                        showtimeErrors[index]?.theaterId ? 'border-error-500 focus:ring-error-500' : ''
-                      }`}
-                    >
-                      <option value="">Chọn rạp chiếu</option>
-                      {theaters.map((theater) => (
-                        <option key={theater.id} value={theater.id}>
-                          {theater.name}
-                        </option>
-                      ))}
-                    </select>
-                    {showtimeErrors[index]?.theaterId && (
-                      <p className="text-error-500 text-xs mt-1">{showtimeErrors[index].theaterId}</p>
-                    )}
-                  </div>
-                  
-                  {/* Date */}
-                  <div>
-                    <label className="block text-xs font-medium mb-1">
-                      Ngày chiếu <span className="text-error-500">*</span>
-                    </label>
-                    <input
-                      type="date"
-                      value={showtime.date}
-                      onChange={(e) => handleShowtimeChange(index, 'date', e.target.value)}
-                      className={`w-full rounded-lg border-gray-300 dark:bg-gray-700 dark:border-gray-600 text-sm ${
-                        showtimeErrors[index]?.date ? 'border-error-500 focus:ring-error-500' : ''
-                      }`}
-                    />
-                    {showtimeErrors[index]?.date && (
-                      <p className="text-error-500 text-xs mt-1">{showtimeErrors[index].date}</p>
-                    )}
-                  </div>
-                  
-                  {/* Time */}
-                  <div>
-                    <label className="block text-xs font-medium mb-1">
-                      Giờ chiếu <span className="text-error-500">*</span>
-                    </label>
-                    <div className="flex items-center">
-                      <Clock size={16} className="text-gray-400 mr-2" />
-                      <input
-                        type="time"
-                        value={showtime.time}
-                        onChange={(e) => handleShowtimeChange(index, 'time', e.target.value)}
-                        className={`w-full rounded-lg border-gray-300 dark:bg-gray-700 dark:border-gray-600 text-sm ${
-                          showtimeErrors[index]?.time ? 'border-error-500 focus:ring-error-500' : ''
-                        }`}
-                      />
-                    </div>
-                    {showtimeErrors[index]?.time && (
-                      <p className="text-error-500 text-xs mt-1">{showtimeErrors[index].time}</p>
-                    )}
-                  </div>
-                  
-                  {/* Price */}
-                  <div>
-                    <label className="block text-xs font-medium mb-1">
-                      Giá vé <span className="text-error-500">*</span>
-                    </label>
-                    <div className="flex items-center">
-                      <span className="text-gray-500 mr-2">₫</span>
-                      <input
-                        type="number"
-                        value={showtime.price}
-                        onChange={(e) => handleShowtimeChange(index, 'price', Number(e.target.value))}
-                        className={`w-full rounded-lg border-gray-300 dark:bg-gray-700 dark:border-gray-600 text-sm ${
-                          showtimeErrors[index]?.price ? 'border-error-500 focus:ring-error-500' : ''
-                        }`}
-                        min="0"
-                        step="1000"
-                      />
-                    </div>
-                    {showtimeErrors[index]?.price && (
-                      <p className="text-error-500 text-xs mt-1">{showtimeErrors[index].price}</p>
-                    )}
-                  </div>
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Poster Image Upload */}
+              <div className="space-y-2">
+                <ImageUpload
+                  initialImage={formData.posterPath}
+                  onImageSelect={handlePosterChange}
+                  label="Tải lên poster phim"
+                  maxSize={1000000}
+                  accept="image/jpeg,image/png"
+                />
+                {errors.posterPath && (
+                  <p className="text-error-500 text-sm">{errors.posterPath}</p>
+                )}
               </div>
-            ))}
+
+              {/* Backdrop Image Upload */}
+              <div className="space-y-2">
+                <ImageUpload
+                  initialImage={formData.backdropPath}
+                  onImageSelect={handleBackdropChange}
+                  label="Tải lên ảnh nền"
+                  maxSize={2000000}
+                  accept="image/jpeg,image/png"
+                />
+              </div>
+            </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-4">
+          {/* Upcoming Checkbox */}
+          <div className="flex items-center space-x-3">
+            <input
+              type="checkbox"
+              id="upcoming"
+              name="upcoming"
+              checked={formData.upcoming}
+              onChange={handleChange}
+              className="h-5 w-5 rounded border-gray-300 text-primary-600 focus:ring-primary-500 dark:border-gray-600"
+            />
+            <label htmlFor="upcoming" className="text-sm font-medium">
+              Đánh dấu là phim sắp chiếu
+            </label>
+          </div>
+
+          {/* Form Actions */}
+          <div className="sticky bottom-0 bg-white dark:bg-gray-800 flex justify-end gap-3 pt-6 border-t border-gray-200 dark:border-gray-700">
             <button
               type="button"
               onClick={onCancel}
-              className="btn btn-secondary"
+              className="px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
               Hủy
             </button>
             <button
               type="submit"
-              className="btn btn-primary"
+              className="px-4 py-2.5 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
             >
               {movie ? 'Cập nhật' : 'Thêm mới'}
             </button>

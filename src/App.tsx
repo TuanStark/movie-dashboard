@@ -17,23 +17,21 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 import { MovieProvider } from "./contexts/MovieContext";
-import { UserProvider } from "./contexts/UserContext";
 import { ArticleProvider } from "./contexts/ArticleContext";
-import { TheaterProvider } from "./contexts/TheaterContext";
 import { BookingProvider } from "./contexts/BookingContext";
 import { ShowtimeProvider } from "./contexts/ShowtimeContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Layout from "./components/Layout";
+import { TheaterProvider } from "./contexts/TheaterContext";
 
 function App() {
   return (
     <Router>
       <AuthProvider>
         <MovieProvider>
-          <UserProvider>
+          <TheaterProvider>
             <ArticleProvider>
-              <TheaterProvider>
                 <BookingProvider>
                   <ShowtimeProvider>
                     <Routes>
@@ -64,9 +62,8 @@ function App() {
                     </Routes>
                   </ShowtimeProvider>
                 </BookingProvider>
-              </TheaterProvider>
             </ArticleProvider>
-          </UserProvider>
+            </TheaterProvider>
         </MovieProvider>
       </AuthProvider>
     </Router>

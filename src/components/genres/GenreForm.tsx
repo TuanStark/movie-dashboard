@@ -64,7 +64,7 @@ export default function GenreForm({ initialData, onSubmit, onCancel }: GenreForm
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4" style={{ marginTop: '0px' }}>
       <div>
         <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
           Tên thể loại <span className="text-red-500">*</span>

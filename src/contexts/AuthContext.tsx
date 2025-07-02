@@ -1,6 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import api from '../axios';
 import ServiceApi from '../services/api';
 // Define user types
 export interface User {
