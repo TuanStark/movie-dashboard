@@ -1,16 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useShowtimes } from '../contexts/ShowtimeContext';
-import { Search, Plus, Calendar, Clock, MoreVertical, Edit, Trash, Film, Building2 } from 'lucide-react';
-import { useMovies } from '../contexts/MovieContext';
-import { useTheaters } from '../contexts/TheaterContext';
+import { Search, Plus, Calendar, Clock, MoreVertical, Edit, Trash, Film, Building2, Loader, X } from 'lucide-react';
 import DeleteConfirmation from '../components/DeleteConfirmation';
 import ShowtimeForm from '../components/showtimes/ShowtimeForm';
 import ShowtimeDetail from '../components/showtimes/ShowtimeDetail';
+import ServiceApi from '../services/api';
+import type { Movie, Theater, Showtime } from '../types/global-types';
 
 const Showtimes: React.FC = () => {
-  const { showtimes, deleteShowtime, getShowtime, addShowtime, updateShowtime } = useShowtimes();
-  const { movies } = useMovies();
-  const { theaters } = useTheaters();
+  const { showtimes, loading: loadingShowtimes, deleteShowtime, addShowtime, updateShowtime, fetchShowtimes } = useShowtimes();
+  const [movies, setMovies] = useState<Movie[]>([]);
+  const [theaters, setTheaters] = useState<Theater[]>([]);
+  const [loading, setLoading] = useState(true);
   
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
@@ -20,6 +21,30 @@ const Showtimes: React.FC = () => {
   const [filterDate, setFilterDate] = useState<string>('');
   const [filterMovieId, setFilterMovieId] = useState<number | null>(null);
   const [filterTheaterId, setFilterTheaterId] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch movies and theaters
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const [moviesRes, theatersRes] = await Promise.all([
+          ServiceApi.get('/movies'),
+          ServiceApi.get('/theaters')
+        ]);
+        setMovies(moviesRes.data.data.data || []);
+        setTheaters(theatersRes.data.data.data || []);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        setError('Không thể tải dữ liệu. Vui lòng thử lại sau.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   // Filter showtimes
   const filteredShowtimes = showtimes.filter(showtime => {
@@ -46,15 +71,69 @@ const Showtimes: React.FC = () => {
     return matchesSearch && matchesDate && matchesMovie && matchesTheater;
   });
 
-  const handleDeleteShowtime = () => {
+  const handleDeleteShowtime = async () => {
     if (deletingShowtimeId !== null) {
-      deleteShowtime(deletingShowtimeId);
-      setDeletingShowtimeId(null);
+      try {
+        await deleteShowtime(deletingShowtimeId);
+        setDeletingShowtimeId(null);
+      } catch (error) {
+        console.error('Error deleting showtime:', error);
+      }
+    }
+  };
+
+  const handleAddShowtime = async (showtime: Omit<Showtime, 'id'>) => {
+    try {
+      await addShowtime(showtime);
+      setShowAddForm(false);
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const handleUpdateShowtime = async (showtime: Omit<Showtime, 'id'>) => {
+    if (editingShowtimeId !== null) {
+      try {
+        await updateShowtime(editingShowtimeId, showtime);
+        setEditingShowtimeId(null);
+      } catch (error) {
+        throw error;
+      }
     }
   };
 
   // Get unique dates for filter
   const uniqueDates = [...new Set(showtimes.map(s => s.date))].sort();
+
+  if (loading || loadingShowtimes) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="flex items-center gap-3">
+          <Loader className="animate-spin" />
+          <span>Đang tải...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="text-error-500 mb-3">
+            <X size={40} className="mx-auto" />
+          </div>
+          <p className="text-gray-600 dark:text-gray-300">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          >
+            Tải lại trang
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="animate-fadeIn space-y-6">
@@ -248,42 +327,23 @@ const Showtimes: React.FC = () => {
         </div>
       </div>
 
-      {/* Add Showtime Form */}
-      {showAddForm && (
+      {/* Add/Edit Form */}
+      {(showAddForm || editingShowtimeId !== null) && (
         <ShowtimeForm
-          onSubmit={(showtimeData) => {
-            addShowtime(showtimeData);
+          showtime={editingShowtimeId !== null ? showtimes.find(s => s.id === editingShowtimeId) : undefined}
+          onSubmit={editingShowtimeId !== null ? handleUpdateShowtime : handleAddShowtime}
+          onCancel={() => {
             setShowAddForm(false);
-          }}
-          onCancel={() => setShowAddForm(false)}
-        />
-      )}
-
-      {/* Edit Showtime Form */}
-      {editingShowtimeId !== null && (
-        <ShowtimeForm
-          showtime={getShowtime(editingShowtimeId)}
-          onSubmit={(showtimeData) => {
-            updateShowtime(editingShowtimeId, showtimeData);
             setEditingShowtimeId(null);
           }}
-          onCancel={() => setEditingShowtimeId(null)}
         />
       )}
 
-      {/* View Showtime Detail */}
+      {/* View Detail */}
       {viewingShowtimeId !== null && (
         <ShowtimeDetail
-          showtime={getShowtime(viewingShowtimeId)!}
+          showtimeId={viewingShowtimeId}
           onClose={() => setViewingShowtimeId(null)}
-          onEdit={() => {
-            setEditingShowtimeId(viewingShowtimeId);
-            setViewingShowtimeId(null);
-          }}
-          onDelete={() => {
-            setDeletingShowtimeId(viewingShowtimeId);
-            setViewingShowtimeId(null);
-          }}
         />
       )}
 
@@ -291,7 +351,7 @@ const Showtimes: React.FC = () => {
       {deletingShowtimeId !== null && (
         <DeleteConfirmation
           title="Xóa suất chiếu"
-          message="Bạn có chắc chắn muốn xóa suất chiếu này? Hành động này không thể hoàn tác."
+          message="Bạn có chắc chắn muốn xóa suất chiếu này không?"
           onConfirm={handleDeleteShowtime}
           onCancel={() => setDeletingShowtimeId(null)}
         />

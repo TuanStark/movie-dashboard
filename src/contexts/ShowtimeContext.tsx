@@ -1,21 +1,22 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
 import type { ReactNode } from "react";
-import { showtimes as initialShowtimes, movies, theaters } from "../data/mock-data";
-import type { Showtime, Movie, Theater } from "../data/mock-data";
+import type { Showtime, Movie, Theater } from "../types/global-types";
 import ServiceApi from "../services/api";
 
 interface ShowtimeContextType {
   showtimes: Showtime[];
+  loading: boolean;
   getShowtimesByMovie: (movieId: number) => Showtime[];
   getShowtimesByTheater: (theaterId: number) => Showtime[];
   getShowtimesByDate: (date: string) => Showtime[];
-  getMoviesByTheater: (theaterId: number) => Movie[];
-  getTheatersByMovie: (movieId: number) => Theater[];
+  getMoviesByTheater: (theaterId: number) => number[];
+  getTheatersByMovie: (movieId: number) => number[];
   getUniqueShowtimeDates: () => string[];
-  addShowtime: (showtime: Omit<Showtime, 'id'>) => void;
-  updateShowtime: (id: number, showtime: Omit<Showtime, 'id'>) => void;
-  deleteShowtime: (id: number) => void;
+  addShowtime: (showtime: Omit<Showtime, 'id'>) => Promise<void>;
+  updateShowtime: (id: number, showtime: Omit<Showtime, 'id'>) => Promise<void>;
+  deleteShowtime: (id: number) => Promise<void>;
   getShowtime: (id: number) => Showtime | undefined;
+  fetchShowtimes: () => Promise<void>;
 }
 
 const ShowtimeContext = createContext<ShowtimeContextType | undefined>(undefined);
@@ -34,23 +35,23 @@ interface ShowtimeProviderProps {
 
 export const ShowtimeProvider: React.FC<ShowtimeProviderProps> = ({ children }) => {
   const [showtimes, setShowtimes] = useState<Showtime[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchShowtimes = async () => {
+    try {
+      setLoading(true);
+      const response = await ServiceApi.get('/show-times');
+      setShowtimes(response.data.data.data || []);
+    } catch (error) {
+      console.error('Error fetching showtimes:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // Load showtimes from localStorage or use initial data
-    const savedShowtimes = localStorage.getItem('showtimes');
-    if (savedShowtimes) {
-      setShowtimes(JSON.parse(savedShowtimes));
-    } else {
-      setShowtimes(initialShowtimes);
-    }
+    fetchShowtimes();
   }, []);
-
-  // Save to localStorage whenever showtimes change
-  useEffect(() => {
-    if (showtimes.length > 0) {
-      localStorage.setItem('showtimes', JSON.stringify(showtimes));
-    }
-  }, [showtimes]);
 
   const getShowtimesByMovie = (movieId: number) => {
     return showtimes.filter(showtime => showtime.movieId === movieId);
@@ -66,62 +67,45 @@ export const ShowtimeProvider: React.FC<ShowtimeProviderProps> = ({ children }) 
 
   const getMoviesByTheater = (theaterId: number) => {
     const theaterShowtimes = getShowtimesByTheater(theaterId);
-    const movieIds = [...new Set(theaterShowtimes.map(showtime => showtime.movieId))];
-    return movies.filter(movie => movieIds.includes(movie.id));
+    return [...new Set(theaterShowtimes.map(showtime => showtime.movieId))];
   };
 
   const getTheatersByMovie = (movieId: number) => {
     const movieShowtimes = getShowtimesByMovie(movieId);
-    const theaterIds = [...new Set(movieShowtimes.map(showtime => showtime.theaterId))];
-    return theaters.filter(theater => theaterIds.includes(theater.id));
+    return [...new Set(movieShowtimes.map(showtime => showtime.theaterId))];
   };
 
   const getUniqueShowtimeDates = () => {
     return [...new Set(showtimes.map(showtime => showtime.date))].sort();
   };
 
-  const addShowtime = (showtime: Omit<Showtime, 'id'>) => {
-    // Generate a new ID (highest ID + 1)
-    const newId = showtimes.length > 0 
-      ? Math.max(...showtimes.map(s => s.id)) + 1 
-      : 1;
-    
-    const newShowtime = {
-      ...showtime,
-      id: newId
-    };
-    
-    setShowtimes([...showtimes, newShowtime]);
-
-    // API call
+  const addShowtime = async (showtime: Omit<Showtime, 'id'>) => {
     try {
-      ServiceApi.post('/showtimes', showtime);
+      await ServiceApi.post('/showtimes', showtime);
+      await fetchShowtimes(); // Refresh list after adding
     } catch (error) {
       console.error('Error adding showtime:', error);
+      throw error;
     }
   };
 
-  const updateShowtime = (id: number, updatedShowtime: Omit<Showtime, 'id'>) => {
-    setShowtimes(showtimes.map(showtime => 
-      showtime.id === id ? { ...updatedShowtime, id } : showtime
-    ));
-
-    // API call
+  const updateShowtime = async (id: number, updatedShowtime: Omit<Showtime, 'id'>) => {
     try {
-      ServiceApi.put(`/showtimes/${id}`, updatedShowtime);
+      await ServiceApi.patch(`/showtimes/${id}`, updatedShowtime);
+      await fetchShowtimes(); // Refresh list after updating
     } catch (error) {
       console.error('Error updating showtime:', error);
+      throw error;
     }
   };
 
-  const deleteShowtime = (id: number) => {
-    setShowtimes(showtimes.filter(showtime => showtime.id !== id));
-
-    // API call
+  const deleteShowtime = async (id: number) => {
     try {
-      ServiceApi.delete(`/showtimes/${id}`);
+      await ServiceApi.delete(`/showtimes/${id}`);
+      await fetchShowtimes(); // Refresh list after deleting
     } catch (error) {
       console.error('Error deleting showtime:', error);
+      throw error;
     }
   };
 
@@ -132,6 +116,7 @@ export const ShowtimeProvider: React.FC<ShowtimeProviderProps> = ({ children }) 
   return (
     <ShowtimeContext.Provider value={{ 
       showtimes,
+      loading,
       getShowtimesByMovie,
       getShowtimesByTheater,
       getShowtimesByDate,
@@ -141,7 +126,8 @@ export const ShowtimeProvider: React.FC<ShowtimeProviderProps> = ({ children }) 
       addShowtime,
       updateShowtime,
       deleteShowtime,
-      getShowtime
+      getShowtime,
+      fetchShowtimes
     }}>
       {children}
     </ShowtimeContext.Provider>

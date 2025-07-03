@@ -1,26 +1,92 @@
-import React from 'react';
-import { X, Edit, Trash, Calendar, Clock, DollarSign, Film, Building2 } from 'lucide-react';
-import type { Showtime } from '../../data/mock-data';
-import { useMovies } from '../../contexts/MovieContext';
-import { useTheaters } from '../../contexts/TheaterContext';
+import React, { useState, useEffect } from 'react';
+import { X, Film, Building2, Calendar, Clock, Ticket } from 'lucide-react';
+import type { Showtime } from '../../types/global-types';
+import ServiceApi from '../../services/api';
 
 interface ShowtimeDetailProps {
-  showtime: Showtime;
+  showtimeId: number;
   onClose: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
 }
 
-const ShowtimeDetail: React.FC<ShowtimeDetailProps> = ({ showtime, onClose, onEdit, onDelete }) => {
-  const { movies } = useMovies();
-  const { theaters } = useTheaters();
-  
-  const movie = movies.find(m => m.id === showtime.movieId);
-  const theater = theaters.find(t => t.id === showtime.theaterId);
-  
+const ShowtimeDetail: React.FC<ShowtimeDetailProps> = ({ showtimeId, onClose }) => {
+  const [showtime, setShowtime] = useState<Showtime | null>(null);
+  const [movie, setMovie] = useState<any>(null);
+  const [theater, setTheater] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchShowtimeDetails = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Fetch showtime details
+        const showtimeRes = await ServiceApi.get(`/showtimes/${showtimeId}`);
+        const showtimeData = showtimeRes.data.data;
+        setShowtime(showtimeData);
+
+        // Fetch related movie and theater details
+        const [movieRes, theaterRes] = await Promise.all([
+          ServiceApi.get(`/movies/${showtimeData.movieId}`),
+          ServiceApi.get(`/theaters/${showtimeData.theaterId}`)
+        ]);
+
+        setMovie(movieRes.data.data);
+        setTheater(theaterRes.data.data);
+      } catch (error) {
+        console.error('Error fetching showtime details:', error);
+        setError('Không thể tải thông tin suất chiếu. Vui lòng thử lại sau.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchShowtimeDetails();
+  }, [showtimeId]);
+
+  if (loading) {
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" >
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6">
+          <div className="flex items-center gap-3">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-500"></div>
+            <span>Đang tải...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" style={{marginTop: '0px'}}>
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 max-w-md">
+          <div className="text-center">
+            <div className="text-error-500 mb-3">
+              <X size={40} className="mx-auto" />
+            </div>
+            <p className="text-gray-600 dark:text-gray-300">{error}</p>
+            <button
+              onClick={onClose}
+              className="mt-4 px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+            >
+              Đóng
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!showtime || !movie || !theater) {
+    return null;
+  }
+
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-fadeIn">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-lg">
+        {/* Header */}
         <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
           <h2 className="text-xl font-semibold">Chi tiết suất chiếu</h2>
           <button 
@@ -30,116 +96,94 @@ const ShowtimeDetail: React.FC<ShowtimeDetailProps> = ({ showtime, onClose, onEd
             <X size={20} />
           </button>
         </div>
-        
+
+        {/* Content */}
         <div className="p-6">
           {/* Movie Info */}
-          {movie && (
-            <div className="flex gap-4 mb-6">
-              <div className="w-24 h-36 flex-shrink-0">
-                {movie.posterPath ? (
-                  <img 
-                    src={movie.posterPath} 
-                    alt={movie.title} 
-                    className="w-full h-full object-cover rounded-lg shadow-md"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
-                    <Film size={24} />
-                  </div>
-                )}
+          <div className="flex gap-4 mb-6">
+            {movie.posterPath ? (
+              <img 
+                src={movie.posterPath} 
+                alt={movie.title} 
+                className="w-24 h-36 object-cover rounded-lg"
+              />
+            ) : (
+              <div className="w-24 h-36 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                <Film size={24} className="text-gray-400" />
+              </div>
+            )}
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold mb-2">{movie.title}</h3>
+              <div className="space-y-1 text-sm text-gray-600 dark:text-gray-300">
+                <p>Thời lượng: {movie.duration} phút</p>
+                <p>Đạo diễn: {movie.director}</p>
+                <p>Thể loại: {movie.genres?.map((g: any) => g.name).join(', ') || 'Chưa cập nhật'}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Showtime Details */}
+          <div className="space-y-4">
+            {/* Theater */}
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
+                <Building2 size={20} className="text-purple-500" />
               </div>
               <div>
-                <h3 className="text-xl font-bold mb-1">{movie.title}</h3>
-                <div className="flex flex-wrap gap-1 mb-2">
-                  {movie.genres.map((genre, idx) => (
-                    <span
-                      key={idx}
-                      className="px-2 py-0.5 bg-gray-100/80 dark:bg-gray-700/80 rounded-full text-xs"
-                    >
-                      {genre}
-                    </span>
-                  ))}
-                </div>
-                <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
-                  <span className="font-medium">Thời lượng:</span> {movie.duration}
-                </p>
-                <p className="text-sm text-gray-600 dark:text-gray-300">
-                  <span className="font-medium">Đạo diễn:</span> {movie.director}
-                </p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Rạp chiếu</p>
+                <p className="font-medium">{theater.name}</p>
               </div>
             </div>
-          )}
-          
-          {/* Theater Info */}
-          {theater && (
-            <div className="glass-card rounded-xl p-4 mb-6">
-              <div className="flex items-center gap-2 mb-2">
-                <Building2 size={18} className="text-purple-500" />
-                <h3 className="font-medium">{theater.name}</h3>
+
+            {/* Date */}
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                <Calendar size={20} className="text-blue-500" />
               </div>
-              <p className="text-sm text-gray-600 dark:text-gray-300 pl-6">
-                {theater.location}
-              </p>
-            </div>
-          )}
-          
-          {/* Showtime Details */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="glass-card rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Calendar size={18} className="text-blue-500" />
+              <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Ngày chiếu</p>
+                <p className="font-medium">
+                  {new Date(showtime.date).toLocaleDateString('vi-VN', {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'numeric',
+                    year: 'numeric'
+                  })}
+                </p>
               </div>
-              <p className="font-medium">
-                {new Date(showtime.date).toLocaleDateString('vi-VN', {
-                  weekday: 'long',
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric'
-                })}
-              </p>
             </div>
-            
-            <div className="glass-card rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Clock size={18} className="text-green-500" />
+
+            {/* Time */}
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
+                <Clock size={20} className="text-green-500" />
+              </div>
+              <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Giờ chiếu</p>
+                <p className="font-medium">{showtime.time}</p>
               </div>
-              <p className="font-medium">{showtime.time}</p>
             </div>
-            
-            <div className="glass-card rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <DollarSign size={18} className="text-amber-500" />
+
+            {/* Price */}
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30">
+                <Ticket size={20} className="text-amber-500" />
+              </div>
+              <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Giá vé</p>
+                <p className="font-medium">{showtime.price.toLocaleString('vi-VN')} đ</p>
               </div>
-              <p className="font-medium">{showtime.price.toLocaleString('vi-VN')} đ</p>
             </div>
-          </div>
-          
-          {/* Additional Info */}
-          <div className="glass-card rounded-xl p-4 mb-4">
-            <h4 className="font-medium mb-2">Thông tin bổ sung</h4>
-            <p className="text-sm text-gray-600 dark:text-gray-300">
-              Mã suất chiếu: <span className="font-mono">{showtime.id}</span>
-            </p>
           </div>
         </div>
-        
-        <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end space-x-3">
+
+        {/* Footer */}
+        <div className="p-6 border-t border-gray-200 dark:border-gray-700">
           <button
-            onClick={onDelete}
-            className="btn btn-error btn-sm flex items-center gap-1"
+            onClick={onClose}
+            className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
           >
-            <Trash size={16} />
-            <span>Xóa</span>
-          </button>
-          <button
-            onClick={onEdit}
-            className="btn btn-primary btn-sm flex items-center gap-1"
-          >
-            <Edit size={16} />
-            <span>Sửa</span>
+            Đóng
           </button>
         </div>
       </div>

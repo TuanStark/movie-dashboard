@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
-import { useMovies } from '../../contexts/MovieContext';
-import { useTheaters } from '../../contexts/TheaterContext';
-import type { Showtime } from '../../data/mock-data';
+import { X, Loader } from 'lucide-react';
+import type { Showtime } from '../../types/global-types';
+import ServiceApi from '../../services/api';
 
 interface ShowtimeFormProps {
   showtime?: Showtime;
-  onSubmit: (showtime: Omit<Showtime, 'id'>) => void;
+  onSubmit: (showtime: Omit<Showtime, 'id'>) => Promise<void>;
   onCancel: () => void;
 }
 
@@ -22,14 +21,42 @@ const emptyShowtime: Omit<Showtime, 'id'> = {
 const ShowtimeForm: React.FC<ShowtimeFormProps> = ({ showtime, onSubmit, onCancel }) => {
   const [formData, setFormData] = useState<Omit<Showtime, 'id'>>(emptyShowtime);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  
-  const { movies } = useMovies();
-  const { theaters } = useTheaters();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [movies, setMovies] = useState<Array<{ id: number; title: string }>>([]);
+  const [theaters, setTheaters] = useState<Array<{ id: number; name: string }>>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch movies and theaters
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [moviesRes, theatersRes] = await Promise.all([
+          ServiceApi.get('/movies'),
+          ServiceApi.get('/theaters')
+        ]);
+        setMovies(moviesRes.data.data.data || []);
+        setTheaters(theatersRes.data.data.data || []);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   // Initialize form with showtime data if provided (edit mode)
   useEffect(() => {
     if (showtime) {
-      setFormData(showtime);
+      setFormData({
+        movieId: showtime.movieId,
+        theaterId: showtime.theaterId,
+        date: showtime.date,
+        time: showtime.time,
+        price: showtime.price
+      });
     }
   }, [showtime]);
 
@@ -52,6 +79,15 @@ const ShowtimeForm: React.FC<ShowtimeFormProps> = ({ showtime, onSubmit, onCance
         [name]: value
       });
     }
+
+    // Clear error when field is changed
+    if (errors[name]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
   };
 
   const validate = (): boolean => {
@@ -67,13 +103,36 @@ const ShowtimeForm: React.FC<ShowtimeFormProps> = ({ showtime, onSubmit, onCance
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (validate()) {
-      onSubmit(formData);
+      try {
+        setIsSubmitting(true);
+        await onSubmit(formData);
+        onCancel(); // Close form after successful submission
+      } catch (error: any) {
+        console.error('Error submitting form:', error);
+        setErrors(prev => ({
+          ...prev,
+          submit: error.response?.data?.message || 'Có lỗi xảy ra khi lưu suất chiếu'
+        }));
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
+
+  if (loading) {
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 flex items-center gap-3">
+          <Loader className="animate-spin" />
+          <span>Đang tải...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" style={{ marginTop: '0px' }}>
@@ -95,16 +154,17 @@ const ShowtimeForm: React.FC<ShowtimeFormProps> = ({ showtime, onSubmit, onCance
             {/* Movie Selection */}
             <div className="space-y-2">
               <label htmlFor="movieId" className="block text-sm font-medium">
-                Phim
+                Phim <span className="text-error-500">*</span>
               </label>
               <select
                 id="movieId"
                 name="movieId"
                 value={formData.movieId}
                 onChange={handleChange}
-                className={`w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg ${
+                className={`w-full px-3 py-2 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 ${
                   errors.movieId ? 'border-2 border-error-500' : ''
                 }`}
+                disabled={isSubmitting}
               >
                 <option value="0">Chọn phim</option>
                 {movies.map(movie => (
@@ -121,16 +181,17 @@ const ShowtimeForm: React.FC<ShowtimeFormProps> = ({ showtime, onSubmit, onCance
             {/* Theater Selection */}
             <div className="space-y-2">
               <label htmlFor="theaterId" className="block text-sm font-medium">
-                Rạp chiếu
+                Rạp chiếu <span className="text-error-500">*</span>
               </label>
               <select
                 id="theaterId"
                 name="theaterId"
                 value={formData.theaterId}
                 onChange={handleChange}
-                className={`w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg ${
+                className={`w-full px-3 py-2 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 ${
                   errors.theaterId ? 'border-2 border-error-500' : ''
                 }`}
+                disabled={isSubmitting}
               >
                 <option value="0">Chọn rạp</option>
                 {theaters.map(theater => (
@@ -147,7 +208,7 @@ const ShowtimeForm: React.FC<ShowtimeFormProps> = ({ showtime, onSubmit, onCance
             {/* Date */}
             <div className="space-y-2">
               <label htmlFor="date" className="block text-sm font-medium">
-                Ngày chiếu
+                Ngày chiếu <span className="text-error-500">*</span>
               </label>
               <input
                 type="date"
@@ -155,9 +216,10 @@ const ShowtimeForm: React.FC<ShowtimeFormProps> = ({ showtime, onSubmit, onCance
                 name="date"
                 value={formData.date}
                 onChange={handleChange}
-                className={`w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg ${
+                className={`w-full px-3 py-2 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 ${
                   errors.date ? 'border-2 border-error-500' : ''
                 }`}
+                disabled={isSubmitting}
               />
               {errors.date && (
                 <p className="text-error-500 text-xs">{errors.date}</p>
@@ -167,7 +229,7 @@ const ShowtimeForm: React.FC<ShowtimeFormProps> = ({ showtime, onSubmit, onCance
             {/* Time */}
             <div className="space-y-2">
               <label htmlFor="time" className="block text-sm font-medium">
-                Giờ chiếu
+                Giờ chiếu <span className="text-error-500">*</span>
               </label>
               <input
                 type="time"
@@ -175,9 +237,10 @@ const ShowtimeForm: React.FC<ShowtimeFormProps> = ({ showtime, onSubmit, onCance
                 name="time"
                 value={formData.time}
                 onChange={handleChange}
-                className={`w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg ${
+                className={`w-full px-3 py-2 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 ${
                   errors.time ? 'border-2 border-error-500' : ''
                 }`}
+                disabled={isSubmitting}
               />
               {errors.time && (
                 <p className="text-error-500 text-xs">{errors.time}</p>
@@ -187,24 +250,35 @@ const ShowtimeForm: React.FC<ShowtimeFormProps> = ({ showtime, onSubmit, onCance
             {/* Price */}
             <div className="space-y-2">
               <label htmlFor="price" className="block text-sm font-medium">
-                Giá vé
+                Giá vé <span className="text-error-500">*</span>
               </label>
-              <input
-                type="number"
-                id="price"
-                name="price"
-                min="0"
-                step="1000"
-                value={formData.price}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg ${
-                  errors.price ? 'border-2 border-error-500' : ''
-                }`}
-              />
+              <div className="relative">
+                <input
+                  type="number"
+                  id="price"
+                  name="price"
+                  min="0"
+                  step="1000"
+                  value={formData.price}
+                  onChange={handleChange}
+                  className={`w-full pl-3 pr-12 py-2 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 ${
+                    errors.price ? 'border-2 border-error-500' : ''
+                  }`}
+                  disabled={isSubmitting}
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">VND</span>
+              </div>
               {errors.price && (
                 <p className="text-error-500 text-xs">{errors.price}</p>
               )}
             </div>
+
+            {/* Submit Error */}
+            {errors.submit && (
+              <div className="p-3 bg-error-50 dark:bg-error-900/30 text-error-500 rounded-lg text-sm">
+                {errors.submit}
+              </div>
+            )}
           </div>
 
           {/* Form Actions */}
@@ -212,14 +286,17 @@ const ShowtimeForm: React.FC<ShowtimeFormProps> = ({ showtime, onSubmit, onCance
             <button
               type="button"
               onClick={onCancel}
-              className="btn btn-secondary"
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              disabled={isSubmitting}
             >
               Hủy
             </button>
             <button
               type="submit"
-              className="btn btn-primary"
+              className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors flex items-center gap-2"
+              disabled={isSubmitting}
             >
+              {isSubmitting && <Loader size={16} className="animate-spin" />}
               {showtime ? 'Cập nhật' : 'Thêm suất chiếu'}
             </button>
           </div>
