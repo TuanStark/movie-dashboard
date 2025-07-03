@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useArticles } from '../contexts/ArticleContext';
 import { Search, Plus, Filter, MoreVertical, Edit, Trash, Clock, Calendar, Newspaper, BookOpen, User } from 'lucide-react';
-import ArticleForm from '../components/ArticleForm';
-import ArticleDetail from '../components/ArticleDetail';
+import ArticleForm from '../components/articles/ArticleForm';
+import ArticleDetail from '../components/articles/ArticleDetail';
 import DeleteConfirmation from '../components/DeleteConfirmation';
 
 const Articles: React.FC = () => {

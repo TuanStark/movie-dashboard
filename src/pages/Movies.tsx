@@ -6,6 +6,7 @@ import DeleteConfirmation from "../components/DeleteConfirmation";
 import type { Movie, Showtime, Genre, MovieGenre } from "../types/global-types";
 import useQuery from "../hooks/useQuery";
 import ServiceApi from "../services/api";
+import { formatDateTime } from "../types/format-datetime";
 
 export default function Movies() {
   const [movies, setMovies] = useState<Movie[]>([]);
@@ -122,7 +123,7 @@ export default function Movies() {
     if (!editingMovie) return;
     
     try {
-      await ServiceApi.put(`/movies/${editingMovie.id}`, movie);
+      await ServiceApi.patch(`/movies/${editingMovie.id}`, movie);
       setEditingMovie(null);
       await fetchMovies();
     } catch (error) {
@@ -270,7 +271,7 @@ export default function Movies() {
                   <span>{movie.duration}</span>
                   <span className="mx-2">•</span>
                   <Calendar size={14} className="mr-1" />
-                  <span>{movie.releaseDate}</span>
+                  <span>{formatDateTime(movie.releaseDate)}</span>
                 </div>
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {getGenreNames(movie.genres).slice(0, 2).map((genreName, index) => (
@@ -348,7 +349,7 @@ export default function Movies() {
                     </div>
                   </td>
                   <td className="py-4 px-4 whitespace-nowrap">
-                    <div className="text-sm">{movie.releaseDate}</div>
+                    <div className="text-sm">{formatDateTime(movie.releaseDate)}</div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">{movie.duration}</div>
                   </td>
                   <td className="py-4 px-4 whitespace-nowrap">

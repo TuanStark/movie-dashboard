@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import type { Article } from '../data/mock-data';
+import type { Article } from '../../data/mock-data';
 import { X } from 'lucide-react';
-import ImageUpload from './ImageUpload';
+import ImageUpload from '../ImageUpload';
 
 interface ArticleFormProps {
   article?: Article;

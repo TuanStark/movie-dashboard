@@ -35,8 +35,8 @@ export interface Movie {
   writer?: string;
   country?: string;
   language?: string;
-  actors?: string;
-  cast: string[];
+  actors: string;
+  cast: number[];
   releaseDate: string;
   trailerUrl: string;
   upcoming: boolean;
@@ -66,4 +66,17 @@ export interface User {
   status: string;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface Theater {
+  id: number;
+  name: string;
+  location: string;
+}
+
+export interface ShowtimeInput {
+  theaterId: number;
+  date: string;
+  time: string;
+  price: number;
 }

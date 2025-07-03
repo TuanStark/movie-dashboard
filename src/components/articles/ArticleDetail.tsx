@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Article } from '../data/mock-data';
+import type { Article } from '../../data/mock-data';
 import { X, Edit, Trash, Calendar, Clock, User } from 'lucide-react';
 
 interface ArticleDetailProps {

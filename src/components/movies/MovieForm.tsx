@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import type { Movie, Showtime, Genre, MovieGenre, Actor } from '../../types/global-types';
-import { X, Plus, Trash, Clock, Film, Calendar, Star, Users, Video, Tag } from 'lucide-react';
+import type { Movie, Showtime, Genre, MovieGenre, Actor, ShowtimeInput, Theater } from '../../types/global-types';
+import { X, Plus, Clock, Film, Calendar, Star, Users, Video, Tag, MapPin, Globe } from 'lucide-react';
 import ImageUpload from '../ImageUpload';
 import ServiceApi from '../../services/api';
 
@@ -10,8 +10,14 @@ interface MovieFormProps {
   onCancel: () => void;
 }
 
+// Define the form data interface with file fields
+interface MovieFormData extends Omit<Movie, 'id' | 'createdAt' | 'updatedAt'> {
+  posterFile: File | null;
+  backdropFile: File | null;
+}
+
 // Default empty movie object
-const emptyMovie: Omit<Movie, 'id' | 'createdAt' | 'updatedAt'> = {
+const emptyMovie: MovieFormData = {
   title: '',
   posterPath: '',
   backdropPath: '',
@@ -23,21 +29,14 @@ const emptyMovie: Omit<Movie, 'id' | 'createdAt' | 'updatedAt'> = {
   cast: [],
   releaseDate: '',
   trailerUrl: '',
-  upcoming: false
+  upcoming: false,
+  writer: '',
+  language: '',
+  country: '',
+  actors: 'actorsTest',
+  posterFile: null,
+  backdropFile: null
 };
-
-interface Theater {
-  id: number;
-  name: string;
-  location: string;
-}
-
-interface ShowtimeInput {
-  theaterId: number;
-  date: string;
-  time: string;
-  price: number;
-}
 
 const defaultShowtime: ShowtimeInput = {
   theaterId: 0,
@@ -47,13 +46,14 @@ const defaultShowtime: ShowtimeInput = {
 };
 
 const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
-  const [formData, setFormData] = useState<Omit<Movie, 'id' | 'createdAt' | 'updatedAt'>>(emptyMovie);
+  const [formData, setFormData] = useState<MovieFormData>(emptyMovie);
   const [genreInput, setGenreInput] = useState('');
   const [castInput, setCastInput] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showtimes, setShowtimes] = useState<ShowtimeInput[]>([]);
   const [showtimeErrors, setShowtimeErrors] = useState<Record<number, Record<string, string>>>({});
   const [theaters, setTheaters] = useState<Theater[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [availableGenres, setAvailableGenres] = useState<Genre[]>([]);
   const [availableActors, setAvailableActors] = useState<Actor[]>([]);
 
@@ -105,38 +105,51 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
   useEffect(() => {
     if (movie) {
       setFormData({
-        title: movie.title,
-        posterPath: movie.posterPath,
-        backdropPath: movie.backdropPath,
-        genres: movie.genres,
-        rating: movie.rating,
-        synopsis: movie.synopsis,
-        duration: movie.duration,
-        director: movie.director,
-        cast: movie.cast,
-        releaseDate: movie.releaseDate,
-        trailerUrl: movie.trailerUrl,
-        upcoming: movie.upcoming
+        title: movie.title || '',
+        posterPath: movie.posterPath || '',
+        backdropPath: movie.backdropPath || '',
+        genres: movie.genres || [],
+        rating: movie.rating || 0,
+        synopsis: movie.synopsis || '',
+        duration: movie.duration || '',
+        director: movie.director || '',
+        cast: movie.cast || [],
+        releaseDate: movie.releaseDate || '',
+        trailerUrl: movie.trailerUrl || '',
+        upcoming: movie.upcoming || false,
+        writer: movie.writer || '',
+        language: movie.language || '',
+        country: movie.country || '',
+        actors: movie.actors || 'actorsTest',
+        posterFile: null,
+        backdropFile: null,
       });
       
-      // In a real application, you would fetch showtimes for the movie here
-      const fetchShowtimes = async () => {
-        try {
-          const response = await ServiceApi.get(`/showtimes/movie/${movie.id}`);
-          const movieShowtimes = response.data.data.data || [];
-          
-          setShowtimes(movieShowtimes.map((showtime: Showtime) => ({
-            theaterId: showtime.theaterId,
-            date: showtime.date,
-            time: showtime.time,
-            price: showtime.price
-          })));
-        } catch (error) {
-          console.error('Error fetching showtimes:', error);
-        }
-      };
-      
-      fetchShowtimes();
+      // Only fetch showtimes if we have a movie ID
+      if (movie.id) {
+        const fetchShowtimes = async () => {
+          try {
+            const response = await ServiceApi.get(`/showtimes/movie/${movie.id}`);
+            const movieShowtimes = response.data.data.data || [];
+            
+            setShowtimes(movieShowtimes.map((showtime: Showtime) => ({
+              theaterId: showtime.theaterId,
+              date: showtime.date,
+              time: showtime.time,
+              price: showtime.price
+            })));
+          } catch (error) {
+            console.error('Error fetching showtimes:', error);
+            // Set empty showtimes array on error
+            setShowtimes([]);
+          }
+        };
+        
+        fetchShowtimes();
+      }
+    } else {
+      setFormData(emptyMovie);
+      setShowtimes([]);
     }
   }, [movie]);
 
@@ -150,17 +163,36 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
   };
 
   const handlePosterChange = (imageData: string | File) => {
-    setFormData({
-      ...formData,
-      posterPath: typeof imageData === 'string' ? imageData : URL.createObjectURL(imageData)
-    });
+    console.log(imageData);
+    if (typeof imageData === 'string') {
+      setFormData(prev => ({
+        ...prev,
+        posterPath: imageData || '',
+        posterFile: null
+      }));
+    } else if (imageData instanceof File) {
+      setFormData(prev => ({
+        ...prev,
+        posterFile: imageData,
+        posterPath: URL.createObjectURL(imageData)
+      }));
+    }
   };
 
   const handleBackdropChange = (imageData: string | File) => {
-    setFormData({
-      ...formData,
-      backdropPath: typeof imageData === 'string' ? imageData : URL.createObjectURL(imageData)
-    });
+    if (typeof imageData === 'string') {
+      setFormData(prev => ({
+        ...prev,
+        backdropPath: imageData || '',
+        backdropFile: null
+      }));
+    } else if (imageData instanceof File) {
+      setFormData(prev => ({
+        ...prev,
+        backdropFile: imageData,
+        backdropPath: URL.createObjectURL(imageData)
+      }));
+    }
   };
 
   const handleAddGenre = () => {
@@ -192,20 +224,27 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
   };
 
   const handleAddCastMember = () => {
-    if (castInput.trim() && !formData.cast.includes(castInput.trim())) {
-      setFormData({
-        ...formData,
-        cast: [...formData.cast, castInput.trim()]
-      });
+    if (castInput.trim()) {
+      // Tìm actor từ danh sách có sẵn
+      const selectedActor = availableActors.find(actor => 
+        actor.name.toLowerCase() === castInput.trim().toLowerCase()
+      );
+      
+      if (selectedActor && !formData.cast.includes(selectedActor.id)) {
+        setFormData(prev => ({
+          ...prev,
+          cast: [...prev.cast, selectedActor.id]
+        }));
+      }
       setCastInput('');
     }
   };
 
-  const handleRemoveCastMember = (castMember: string) => {
-    setFormData({
-      ...formData,
-      cast: formData.cast.filter(c => c !== castMember)
-    });
+  const handleRemoveCastMember = (actorId: number) => {
+    setFormData(prev => ({
+      ...prev,
+      cast: prev.cast.filter(id => id !== actorId)
+    }));
   };
 
   // Xử lý thêm suất chiếu mới
@@ -281,15 +320,45 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
     return isValid;
   };
 
-  const validate = (): boolean => {
+  const validate = () => {
     const newErrors: Record<string, string> = {};
+    console.log('Running validation');
     
-    if (!formData.title.trim()) newErrors.title = 'Tiêu đề không được để trống';
-    if (!formData.posterPath) newErrors.posterPath = 'Poster phim không được để trống';
-    if (!formData.director.trim()) newErrors.director = 'Tên đạo diễn không được để trống';
-    if (!formData.releaseDate.trim()) newErrors.releaseDate = 'Ngày phát hành không được để trống';
-    if (formData.genres.length === 0) newErrors.genres = 'Phải có ít nhất một thể loại';
-    if (formData.rating < 0 || formData.rating > 10) newErrors.rating = 'Đánh giá phải từ 0-10';
+    if (!formData.title.trim()) {
+      newErrors.title = 'Vui lòng nhập tên phim';
+    }
+    
+    if (!formData.director.trim()) {
+      newErrors.director = 'Vui lòng nhập tên đạo diễn';
+    }
+
+    if (!formData.writer?.trim()) {
+      newErrors.writer = 'Vui lòng nhập tên tác giả';
+    }
+    
+    if (!formData.duration.trim()) {
+      newErrors.duration = 'Vui lòng nhập thời lượng phim';
+    }
+    
+    if (!formData.releaseDate) {
+      newErrors.releaseDate = 'Vui lòng chọn ngày khởi chiếu';
+    }
+    
+    if (!formData.synopsis.trim()) {
+      newErrors.synopsis = 'Vui lòng nhập tóm tắt phim';
+    }
+    
+    if (!formData.trailerUrl.trim()) {
+      newErrors.trailerUrl = 'Vui lòng nhập URL trailer';
+    }
+    
+    if (!formData.posterPath && !formData.posterFile) {
+      newErrors.posterPath = 'Vui lòng tải lên poster phim';
+    }
+    
+    if (!formData.backdropPath && !formData.backdropFile) {
+      newErrors.backdropPath = 'Vui lòng tải lên ảnh nền';
+    }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -297,34 +366,102 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Form submitted');
+    
+    // Ensure actors has a default value
+    if (!formData.actors) {
+      setFormData(prev => ({
+        ...prev,
+        actors: 'actorsTest'
+      }));
+    }
     
     const isMovieValid = validate();
     const areShowtimesValid = validateShowtimes();
     
+    console.log('Validation results:', { isMovieValid, areShowtimesValid });
+    console.log('Form data:', formData);
+    console.log('Errors:', errors);
+    
     if (isMovieValid && areShowtimesValid) {
       try {
-        // Submit movie data
-        onSubmit(formData);
+        console.log('Starting API call');
         
-        // If this is a new movie, we'll handle showtimes in the backend
-        // If editing, we need to save showtimes separately
-        if (movie && showtimes.length > 0) {
-          // This would be handled by the backend in a real application
-          // For now, we just show a message
-          console.log('Would update showtimes:', showtimes);
+        // Prepare movie data
+        const formDataObj = new FormData();
+        // Handle file uploads
+        if (formData.posterFile instanceof File) {
+          formDataObj.append('posterFile', formData.posterFile);
+        }else{
+          formDataObj.append('posterPath', formData.posterPath);
         }
-      } catch (error) {
-        console.error('Error saving movie:', error);
+        if (formData.backdropFile instanceof File) {
+          formDataObj.append('backdropFile', formData.backdropFile);
+        }else{
+          formDataObj.append('backdropPath', formData.backdropPath);
+        }
+
+        formDataObj.append('title', formData.title);
+        formDataObj.append('director', formData.director);
+        formDataObj.append('duration', formData.duration);
+        formDataObj.append('releaseDate', new Date(formData.releaseDate).toISOString());
+        formDataObj.append('rating', formData.rating.toString());
+        formDataObj.append('trailerUrl', formData.trailerUrl);
+        formDataObj.append('upcoming', formData.upcoming.toString());
+        formDataObj.append('genreIds', JSON.stringify(formData.genres.map(g => g.genreId)));
+        formDataObj.append('castIds', JSON.stringify(formData.cast));
+        formDataObj.append('synopsis', formData.synopsis);
+        formDataObj.append('writer', formData.writer || 'Unknown');
+        formDataObj.append('language', formData.language || '');
+        formDataObj.append('country', formData.country || '');
+        formDataObj.append('actors', formData.actors);
+
+        console.log('Form data being sent:', Object.fromEntries(formDataObj.entries()));
+
+        // Determine if this is an update or create operation
+        const isUpdate = movie && movie.id;
+        const url = isUpdate ? `${import.meta.env.VITE_URL}movies/${movie.id}` : `${import.meta.env.VITE_URL}movies`;
+        const method = isUpdate ? 'PATCH' : 'POST';
+  
+        // Send movie data
+        const response = await fetch(url, {
+          method: method,
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          },
+          body: formDataObj
+        });
+        
+        console.log('API Response:', response);
+        const responseData = await response.json();
+        console.log('Response data:', responseData);
+  
+        if (response.ok) {
+          // Success - call onSubmit with the theater data
+          onSubmit({
+            ...formData,
+            genres: formData.genres,
+            cast: formData.cast
+          });
+        } else {
+          throw new Error(responseData.message || `Failed to ${isUpdate ? 'update' : 'create'} movie`);
+        }
+      } catch (error: any) {
+        console.error('Error submitting form:', error);
+        const errorMessage = error.response?.data?.message || error.message || 'Có lỗi khi gửi biểu mẫu';
+        setErrors(prev => ({ ...prev, form: errorMessage }));
+      } finally {
+        setIsSubmitting(false);
       }
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent, action: () => void) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      action();
-    }
-  };
+  // const handleKeyPress = (e: React.KeyboardEvent, action: () => void) => {
+  //   if (e.key === 'Enter') {
+  //     e.preventDefault();
+  //     action();
+  //   }
+  // };
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50" style={{ marginTop: '0px' }}>
@@ -379,7 +516,7 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
               {/* Director */}
               <div className="space-y-2">
                 <label htmlFor="director" className="block text-sm font-medium">
-                  Đạo diễn <span className="text-error-500">*</span>
+                  Đạo diễn
                 </label>
                 <input
                   type="text"
@@ -391,9 +528,29 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
                     errors.director ? 'border-2 border-error-500' : ''
                   }`}
                   placeholder="Nhập tên đạo diễn"
+                  required
                 />
-                {errors.director && (
-                  <p className="text-error-500 text-sm">{errors.director}</p>
+              </div>
+
+              {/* Writer */}
+              <div className="space-y-2">
+                <label htmlFor="writer" className="block text-sm font-medium">
+                  Tác giả <span className="text-error-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="writer"
+                  name="writer"
+                  value={formData.writer || ''}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-2.5 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 ${
+                    errors.writer ? 'border-2 border-error-500' : ''
+                  }`}
+                  placeholder="Nhập tên tác giả"
+                  required
+                />
+                {errors.writer && (
+                  <p className="text-error-500 text-sm">{errors.writer}</p>
                 )}
               </div>
 
@@ -484,6 +641,49 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
                   />
                 </div>
               </div>
+
+                {/* Language */}
+              <div className="space-y-2">
+                <label htmlFor="language" className="block text-sm font-medium">
+                  Ngôn ngữ
+                </label>
+                <div className="relative">
+                  <Globe size={16} className="absolute left-3 top-3 text-gray-400" />
+                  <input
+                    type="text"
+                    id="language"
+                    name="language"
+                    value={formData.language}
+                    onChange={handleChange}
+                    className={`w-full pl-10 pr-4 py-2.5 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 ${
+                      errors.rating ? 'border-2 border-error-500' : ''
+                    }`}
+                    placeholder="Nhập ngôn ngữ"
+                  />
+                </div>
+                {errors.rating && (
+                  <p className="text-error-500 text-sm">{errors.rating}</p>
+                )}
+              </div>
+
+              {/* country */}
+              <div className="space-y-2">
+                <label htmlFor="country" className="block text-sm font-medium">
+                  Quốc gia
+                </label>
+                <div className="relative">
+                  <MapPin size={16} className="absolute left-3 top-3 text-gray-400" />
+                  <input
+                    type="text"
+                    id="country"
+                    name="country"
+                    value={formData.country}
+                    onChange={handleChange}
+                    className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-primary-500"
+                    placeholder="Nhập quốc gia"
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
@@ -512,7 +712,7 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
                 </select>
                 <button
                   type="button"
-                  onClick={handleAddGenre}
+                  onClick={() => handleAddGenre()}
                   className="px-4 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors flex items-center gap-2"
                 >
                   <Plus size={16} />
@@ -542,55 +742,53 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
             </div>
           </div>
 
-          {/* Cast Section */}
-          <div className="space-y-6">
-            <div className="flex items-center gap-2 text-lg font-medium text-gray-800 dark:text-gray-200">
-              <Users size={20} />
-              <h3>Diễn viên</h3>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex gap-3">
-                <select
-                  value={castInput}
-                  onChange={(e) => setCastInput(e.target.value)}
-                  className="flex-1 px-4 py-2.5 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-primary-500"
-                >
-                  <option value="">Chọn diễn viên</option>
-                  {availableActors.map((actor) => (
-                    !formData.cast.includes(actor.name) && (
-                      <option key={actor.id} value={actor.name}>
-                        {actor.name}
-                      </option>
-                    )
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={handleAddCastMember}
-                  className="px-4 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors flex items-center gap-2"
-                >
-                  <Plus size={16} />
-                  Thêm
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {formData.cast.map((castMember, index) => (
+          {/* Cast Members */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium">
+              Diễn viên
+            </label>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {formData.cast.map((actorId) => {
+                const actor = availableActors.find(a => a.id === actorId);
+                return actor && (
                   <span
-                    key={index}
-                    className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                    key={actor.id}
+                    className="inline-flex items-center gap-1 px-3 py-1 text-sm bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full"
                   >
-                    {castMember}
+                    {actor.name}
                     <button
                       type="button"
-                      onClick={() => handleRemoveCastMember(castMember)}
-                      className="ml-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                      onClick={() => handleRemoveCastMember(actor.id)}
+                      className="p-0.5 hover:bg-primary-100 dark:hover:bg-primary-800 rounded-full"
                     >
                       <X size={14} />
                     </button>
                   </span>
+                );
+              })}
+            </div>
+            <div className="flex gap-2">
+              <select
+                value={castInput}
+                onChange={(e) => setCastInput(e.target.value)}
+                className="flex-1 px-4 py-2 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-primary-500"
+              >
+                <option value="">Chọn diễn viên</option>
+                {availableActors.map((actor) => (
+                  !formData.cast.includes(actor.id) && (
+                    <option key={actor.id} value={actor.name}>
+                      {actor.name}
+                    </option>
+                  )
                 ))}
-              </div>
+              </select>
+              <button
+                type="button"
+                onClick={handleAddCastMember}
+                className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 focus:ring-2 focus:ring-primary-500"
+              >
+                <Plus size={20} />
+              </button>
             </div>
           </div>
 
