@@ -53,9 +53,11 @@ export interface Showtime {
   price: number;
   createdAt?: string;
   updatedAt?: string;
+  movie: Movie;
+  theater: Theater;
 }
 
-export interface User {
+export interface Users {
   id: number;
   firstName: string;
   lastName: string;
@@ -79,4 +81,43 @@ export interface ShowtimeInput {
   date: string;
   time: string;
   price: number;
+}
+
+export interface Seats {
+  id: number;
+  bookingId: number;
+  seatId: number;
+  status: string;
+  createdAt?: string;
+  updatedAt?: string;
+  seat: Seat
+}
+
+export interface Seat {
+  id: number;
+  theaterId: number;
+  row: string;
+  number: number;
+  type: string;
+  price: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface Bookings {
+  id: number;
+  bookingId: string;
+  userId: number;
+  movieId: number;
+  bookingCode: string;
+  bookingDate: string;
+  totalPrice: number;
+  status: string;
+  paymentMethod: string;
+  images: string;
+  createdAt?: string;
+  updatedAt?: string;
+  user: Users;
+  seats: Seats[];
+  showtime: Showtime;
 }

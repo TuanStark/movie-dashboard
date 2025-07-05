@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import ImageUpload from '../ImageUpload';
-import type { User } from '../../types/global-types';
+import type { Users } from '../../types/global-types';
 
 interface UserFormProps {
-  user?: User;
-  onSubmit: (user: Omit<User, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  user?: Users;
+  onSubmit: (user: Omit<Users, 'id' | 'createdAt' | 'updatedAt'>) => void;
   onCancel: () => void;
 }
 
 // Extend the User type to include the file object for the form
-interface UserFormData extends Omit<User, 'id' | 'createdAt' | 'updatedAt'> {
+interface UserFormData extends Omit<Users, 'id' | 'createdAt' | 'updatedAt'> {
   file?: File | null;
 }
 

@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
 import type { ReactNode } from "react";
-import type { Showtime, Movie, Theater } from "../types/global-types";
+import type { Showtime } from "../types/global-types";
 import ServiceApi from "../services/api";
 
 interface ShowtimeContextType {
@@ -81,7 +81,7 @@ export const ShowtimeProvider: React.FC<ShowtimeProviderProps> = ({ children }) 
 
   const addShowtime = async (showtime: Omit<Showtime, 'id'>) => {
     try {
-      await ServiceApi.post('/showtimes', showtime);
+      await ServiceApi.post('/show-times', showtime);
       await fetchShowtimes(); // Refresh list after adding
     } catch (error) {
       console.error('Error adding showtime:', error);
@@ -91,7 +91,7 @@ export const ShowtimeProvider: React.FC<ShowtimeProviderProps> = ({ children }) 
 
   const updateShowtime = async (id: number, updatedShowtime: Omit<Showtime, 'id'>) => {
     try {
-      await ServiceApi.patch(`/showtimes/${id}`, updatedShowtime);
+      await ServiceApi.patch(`/show-times/${id}`, updatedShowtime);
       await fetchShowtimes(); // Refresh list after updating
     } catch (error) {
       console.error('Error updating showtime:', error);
@@ -101,7 +101,7 @@ export const ShowtimeProvider: React.FC<ShowtimeProviderProps> = ({ children }) 
 
   const deleteShowtime = async (id: number) => {
     try {
-      await ServiceApi.delete(`/showtimes/${id}`);
+      await ServiceApi.delete(`/show-times/${id}`);
       await fetchShowtimes(); // Refresh list after deleting
     } catch (error) {
       console.error('Error deleting showtime:', error);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { Movie, Showtime, Genre, MovieGenre, Actor, ShowtimeInput, Theater } from '../../types/global-types';
-import { X, Plus, Clock, Film, Calendar, Star, Users, Video, Tag, MapPin, Globe } from 'lucide-react';
+import { X, Plus, Clock, Film, Calendar, Star, Video, Tag, MapPin, Globe } from 'lucide-react';
 import ImageUpload from '../ImageUpload';
 import ServiceApi from '../../services/api';
 
@@ -38,12 +38,12 @@ const emptyMovie: MovieFormData = {
   backdropFile: null
 };
 
-const defaultShowtime: ShowtimeInput = {
-  theaterId: 0,
-  date: '',
-  time: '',
-  price: 0
-};
+// const defaultShowtime: ShowtimeInput = {
+//   theaterId: 0,
+//   date: '',
+//   time: '',
+//   price: 0
+// };
 
 const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
   const [formData, setFormData] = useState<MovieFormData>(emptyMovie);
@@ -248,41 +248,41 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
   };
 
   // Xử lý thêm suất chiếu mới
-  const handleAddShowtime = () => {
-    setShowtimes([...showtimes, { ...defaultShowtime }]);
-  };
+  // const handleAddShowtime = () => {
+  //   setShowtimes([...showtimes, { ...defaultShowtime }]);
+  // };
 
-  // Xử lý xóa suất chiếu
-  const handleRemoveShowtime = (index: number) => {
-    const newShowtimes = [...showtimes];
-    newShowtimes.splice(index, 1);
-    setShowtimes(newShowtimes);
+  // // Xử lý xóa suất chiếu
+  // const handleRemoveShowtime = (index: number) => {
+  //   const newShowtimes = [...showtimes];
+  //   newShowtimes.splice(index, 1);
+  //   setShowtimes(newShowtimes);
     
-    // Cập nhật lỗi
-    const newErrors = { ...showtimeErrors };
-    delete newErrors[index];
-    setShowtimeErrors(newErrors);
-  };
+  //   // Cập nhật lỗi
+  //   const newErrors = { ...showtimeErrors };
+  //   delete newErrors[index];
+  //   setShowtimeErrors(newErrors);
+  // };
 
-  // Xử lý thay đổi thông tin suất chiếu
-  const handleShowtimeChange = (index: number, field: keyof ShowtimeInput, value: string | number) => {
-    const newShowtimes = [...showtimes];
-    newShowtimes[index] = {
-      ...newShowtimes[index],
-      [field]: value
-    };
-    setShowtimes(newShowtimes);
+  // // Xử lý thay đổi thông tin suất chiếu
+  // const handleShowtimeChange = (index: number, field: keyof ShowtimeInput, value: string | number) => {
+  //   const newShowtimes = [...showtimes];
+  //   newShowtimes[index] = {
+  //     ...newShowtimes[index],
+  //     [field]: value
+  //   };
+  //   setShowtimes(newShowtimes);
     
-    // Xóa lỗi khi người dùng sửa
-    if (showtimeErrors[index] && showtimeErrors[index][field as string]) {
-      const newErrors = { ...showtimeErrors };
-      delete newErrors[index][field as string];
-      if (Object.keys(newErrors[index]).length === 0) {
-        delete newErrors[index];
-      }
-      setShowtimeErrors(newErrors);
-    }
-  };
+  //   // Xóa lỗi khi người dùng sửa
+  //   if (showtimeErrors[index] && showtimeErrors[index][field as string]) {
+  //     const newErrors = { ...showtimeErrors };
+  //     delete newErrors[index][field as string];
+  //     if (Object.keys(newErrors[index]).length === 0) {
+  //       delete newErrors[index];
+  //     }
+  //     setShowtimeErrors(newErrors);
+  //   }
+  // };
 
   const validateShowtimes = (): boolean => {
     const newErrors: Record<number, Record<string, string>> = {};

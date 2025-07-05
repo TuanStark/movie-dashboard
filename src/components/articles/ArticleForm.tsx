@@ -86,7 +86,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({ article, onSubmit, onCancel }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" style={{marginTop : "0px"}}>
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
           <h2 className="text-xl font-semibold">
@@ -166,7 +166,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({ article, onSubmit, onCancel }
             <div className="space-y-2 md:col-span-2">
               <ImageUpload
                 initialImage={formData.imagePath}
-                onImageChange={handleImageChange}
+                onImageSelect={handleImageChange}
                 label="Hình ảnh bài viết"
               />
             </div>
@@ -239,7 +239,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({ article, onSubmit, onCancel }
             <div className="space-y-2">
               <ImageUpload
                 initialImage={formData.authorAvatar}
-                onImageChange={handleAuthorAvatarChange}
+                onImageSelect={handleAuthorAvatarChange}
                 label="Avatar tác giả"
               />
             </div>

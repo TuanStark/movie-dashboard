@@ -3,11 +3,11 @@ import { Search, Filter, MoreVertical, Edit, Trash, User as UserIcon, Users as U
 import UserForm from '../components/users/UserForm';
 import UserDetail from '../components/users/UserDetail';
 import ServiceApi from '../services/api';
-import type { User } from '../types/global-types';
+import type { Users } from '../types/global-types';
 import DeleteChangeStatus from '../components/DeleteChangeStatus';
 
 const Users: React.FC = () => {
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<Users[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState<string>('all');
   const [editingUserId, setEditingUserId] = useState<number | null>(null);
@@ -39,7 +39,7 @@ const Users: React.FC = () => {
     return matchesSearch && matchesRole;
   });
 
-  const handleUpdateUser = async (id: number, userData: Omit<User, 'id'>) => {
+  const handleUpdateUser = async () => {
     setEditingUserId(null);
     await fetchUsers();
   };
@@ -207,7 +207,7 @@ const Users: React.FC = () => {
       {editingUserId !== null && (
         <UserForm
           user={users.find(user => user.id === editingUserId)!}
-          onSubmit={(userData) => handleUpdateUser(editingUserId, userData)}
+          onSubmit={() => handleUpdateUser()}
           onCancel={() => setEditingUserId(null)}
         />
       )}

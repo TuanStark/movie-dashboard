@@ -1,24 +1,56 @@
-import React, { useState } from "react";
-import { useBookings } from "../contexts/BookingContext";
-import { users, movies } from "../data/mock-data";
-import { Ticket, Search, Filter, User, Film, Calendar, DollarSign, CheckCircle, Clock, Ban, Check, Eye } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Ticket, Search, User, Calendar, DollarSign, CheckCircle, Clock, Ban, Check, Eye } from "lucide-react";
 import BookingDetail from "../components/BookingDetail";
+import type { Bookings } from "../types/global-types";
+import ServiceApi from "../services/api";
+import { formatDateTime } from "../types/format-datetime";
+import formatMoney from "../types/format-money";
 
 export default function Bookings() {
-  const { bookings } = useBookings();
+  const [bookings, setBookings] = useState<Bookings[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<"date" | "price">("date");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [selectedBooking, setSelectedBooking] = useState<typeof bookings[0] | null>(null);
+
+  
+  const [loading, setLoading] = useState(true);
+
+  const fetchBookings = async () => {
+    try {
+      setLoading(true);
+      const response = await ServiceApi.get('/booking');
+      setBookings(response.data.data.data || []);
+    } catch (error) {
+      console.error('Error fetching showtimes:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBookings();
+  }, []);
+
+  // console.log(bookings)
+
+
+  if(!bookings){
+    loading
+  }
+
+  const handleEditStatus = async ()=>{
+    fetchBookings();
+  }
   
   // Lọc và sắp xếp bookings
   const filteredBookings = bookings
     .filter(booking => {
       // Filter by search term
       if (searchTerm) {
-        const user = users.find(u => u.id === booking.userId);
-        const movie = movies.find(m => m.id === booking.movieId);
+        const user = booking.user;
+        const movie = booking.showtime.movie;
         const searchLower = searchTerm.toLowerCase();
         
         const matchesSearch = booking.bookingId.toLowerCase().includes(searchLower) ||
@@ -57,10 +89,10 @@ export default function Bookings() {
   };
 
   const statusOptions = [
-    { value: "confirmed", label: "Đã xác nhận", icon: <CheckCircle size={16} className="text-success-500" />, color: "bg-success-100 text-success-700 dark:bg-success-900/30 dark:text-success-300" },
-    { value: "pending", label: "Đang chờ", icon: <Clock size={16} className="text-warning-500" />, color: "bg-warning-100 text-warning-700 dark:bg-warning-900/30 dark:text-warning-300" },
-    { value: "cancelled", label: "Đã hủy", icon: <Ban size={16} className="text-error-500" />, color: "bg-error-100 text-error-700 dark:bg-error-900/30 dark:text-error-300" },
-    { value: "completed", label: "Đã hoàn thành", icon: <Check size={16} className="text-primary-500" />, color: "bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300" }
+    { value: "CONFIRMED", label: "Đã xác nhận", icon: <CheckCircle size={16} className="text-success-500" />, color: "bg-success-100 text-success-700 dark:bg-success-900/30 dark:text-success-300" },
+    { value: "PENDING", label: "Đang chờ", icon: <Clock size={16} className="text-warning-500" />, color: "bg-warning-100 text-warning-700 dark:bg-warning-900/30 dark:text-warning-300" },
+    { value: "CANCELLED", label: "Đã hủy", icon: <Ban size={16} className="text-error-500" />, color: "bg-error-100 text-error-700 dark:bg-error-900/30 dark:text-error-300" },
+    { value: "COMPLETED", label: "Đã hoàn thành", icon: <Check size={16} className="text-primary-500" />, color: "bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300" }
   ];
   
   const getStatusBadge = (status: string) => {
@@ -180,12 +212,12 @@ export default function Bookings() {
             <tbody className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm divide-y divide-gray-200/80 dark:divide-gray-700/80">
               {filteredBookings.length > 0 ? (
                 filteredBookings.map((booking) => {
-                  const user = users.find(u => u.id === booking.userId);
-                  const movie = movies.find(m => m.id === booking.movieId);
+                  const user = booking.user;
+                  const movie = booking?.showtime?.movie;
                   return (
                     <tr key={booking.id} className="hover:bg-gray-50/90 dark:hover:bg-gray-750/90 transition-colors">
                       <td className="py-4 px-4">
-                        <span className="font-medium text-primary-600 dark:text-primary-400">{booking.bookingId}</span>
+                        <span className="font-medium text-primary-600 dark:text-primary-400">{booking.bookingCode}</span>
                       </td>
                       <td className="py-4 px-4">
                         <div className="flex items-center gap-3">
@@ -214,20 +246,20 @@ export default function Bookings() {
                               />
                             </div>
                           )}
-                          <span>{movie ? movie.title : 'N/A'}</span>
+                          <span>{movie ? movie?.title  : 'N/A'}</span>
                         </div>
                       </td>
                       <td className="py-4 px-4">
                         <div className="flex items-center gap-2">
                           <Calendar size={16} className="text-gray-400" />
-                          <span>{booking.bookingDate}</span>
+                          <span>{formatDateTime(booking.bookingDate)}</span>
                         </div>
                       </td>
                       <td className="py-4 px-4">
                         {getStatusBadge(booking.status || "confirmed")}
                       </td>
                       <td className="py-4 px-4 text-right">
-                        <span className="font-medium text-success-600 dark:text-success-400">${booking.totalPrice.toFixed(2)}</span>
+                        <span className="font-medium text-success-600 dark:text-success-400">{formatMoney(booking.totalPrice)}</span>
                       </td>
                       <td className="py-4 px-4 text-right">
                         <button 
@@ -258,14 +290,15 @@ export default function Bookings() {
               Tổng số vé: <span className="font-medium text-gray-800 dark:text-gray-200">{filteredBookings.length}</span>
             </div>
             <div className="text-sm font-medium">
-              Tổng doanh thu: <span className="text-success-600 dark:text-success-400">${filteredBookings.reduce((sum, booking) => sum + booking.totalPrice, 0).toFixed(2)}</span>
+              Tổng doanh thu: <span className="text-success-600 dark:text-success-400">${formatMoney(filteredBookings.reduce((sum, booking) => sum + booking.totalPrice, 0))}</span>
             </div>
           </div>
         </div>
       </div>
       
       {selectedBooking && (
-        <BookingDetail 
+        <BookingDetail
+          onEditStatus={handleEditStatus}
           booking={selectedBooking} 
           onClose={() => setSelectedBooking(null)} 
         />
