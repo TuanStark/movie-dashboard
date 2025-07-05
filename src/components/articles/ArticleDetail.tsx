@@ -1,15 +1,14 @@
 import React from 'react';
-import type { Article } from '../../data/mock-data';
-import { X, Edit, Trash, Calendar, Clock, User } from 'lucide-react';
+import { X, Calendar, Clock, User } from 'lucide-react';
+import type { Articles } from '../../types/global-types';
 
 interface ArticleDetailProps {
-  article: Article;
+  article: Articles;
   onClose: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
 }
 
-const ArticleDetail: React.FC<ArticleDetailProps> = ({ article, onClose, onEdit, onDelete }) => {
+const ArticleDetail: React.FC<ArticleDetailProps> = ({ article, onClose}) => {
+  console.log('ArticleDetail rendered', article);
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" style={{marginTop : "0px"}}>
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -30,7 +29,7 @@ const ArticleDetail: React.FC<ArticleDetailProps> = ({ article, onClose, onEdit,
             <div className="flex flex-wrap gap-4 text-sm text-gray-500 dark:text-gray-400 mb-4">
               <div className="flex items-center gap-1">
                 <User size={16} />
-                <span>{article.author}</span>
+                <span>{article.author?.firstName}{article.author?.lastName}</span>
               </div>
               <div className="flex items-center gap-1">
                 <Calendar size={16} />
@@ -41,7 +40,7 @@ const ArticleDetail: React.FC<ArticleDetailProps> = ({ article, onClose, onEdit,
                 <span>{article.readTime} phút đọc</span>
               </div>
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-300">
-                {article.category}
+                {article.category.name}
               </span>
             </div>
             
@@ -69,10 +68,10 @@ const ArticleDetail: React.FC<ArticleDetailProps> = ({ article, onClose, onEdit,
           
           {/* Author Info */}
           <div className="mt-8 flex items-center p-4 bg-gray-50 dark:bg-gray-750 rounded-lg">
-            {article.authorAvatar ? (
+            {article.author.avatar ? (
               <img 
-                src={article.authorAvatar} 
-                alt={article.author}
+                src={article.author.avatar} 
+                // alt={article.author}
                 className="w-12 h-12 rounded-full mr-4 object-cover"
               />
             ) : (
@@ -81,7 +80,7 @@ const ArticleDetail: React.FC<ArticleDetailProps> = ({ article, onClose, onEdit,
               </div>
             )}
             <div>
-              <h4 className="font-semibold">{article.author}</h4>
+              <h4 className="font-semibold">{article.author?.firstName}{article.author?.lastName}</h4>
               <p className="text-sm text-gray-500 dark:text-gray-400">Tác giả</p>
             </div>
           </div>
@@ -89,18 +88,10 @@ const ArticleDetail: React.FC<ArticleDetailProps> = ({ article, onClose, onEdit,
         
         <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end space-x-3">
           <button
-            onClick={onDelete}
-            className="btn btn-error btn-sm flex items-center gap-1"
-          >
-            <Trash size={16} />
-            <span>Xóa</span>
-          </button>
-          <button
-            onClick={onEdit}
+            onClick={onClose}
             className="btn btn-primary btn-sm flex items-center gap-1"
           >
-            <Edit size={16} />
-            <span>Sửa</span>
+            Close
           </button>
         </div>
       </div>

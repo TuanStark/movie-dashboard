@@ -121,3 +121,26 @@ export interface Bookings {
   seats: Seats[];
   showtime: Showtime;
 }
+
+export interface Categories{
+  id: number;
+  name: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface Articles{
+  id: number;
+  title: string;
+  excerpt: string;
+  content: string;
+  categoryId: number;
+  readTime: number;
+  imagePath: string;
+  date:string;
+  authorId: string;
+  author: Users;
+  category: Categories
+  createdAt?: string;
+  updatedAt?: string;
+}

@@ -82,37 +82,10 @@ export interface Article {
   readTime: number;
 }
 
-export const users: User[] = [
-  {
-    id: 1,
-    firstName: "John",
-    lastName: "Doe",
-    email: "john@example.com",
-    password: "password123",
-    role: "user",
-    avatar: "https://randomuser.me/api/portraits/men/32.jpg",
-    bookings: [101, 102]
-  },
-  {
-    id: 2,
-    firstName: "Jane",
-    lastName: "Smith",
-    email: "jane@example.com",
-    password: "password123",
-    role: "user",
-    avatar: "https://randomuser.me/api/portraits/women/44.jpg",
-    bookings: [103]
-  },
-  {
-    id: 3,
-    firstName: "Admin",
-    lastName: "User",
-    email: "admin@example.com",
-    password: "admin123",
-    role: "admin",
-    bookings: []
-  }
-];
+export interface Category {
+  id: number;
+  name: string;
+}
 
 export const bookings: Booking[] = [
   {
