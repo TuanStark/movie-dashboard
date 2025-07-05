@@ -3,11 +3,11 @@ import { Search, Filter, MoreVertical, Edit, Trash, User as UserIcon, Users as U
 import UserForm from '../components/users/UserForm';
 import UserDetail from '../components/users/UserDetail';
 import ServiceApi from '../services/api';
-import type { Users } from '../types/global-types';
+import type { Users as UserType } from '../types/global-types';
 import DeleteChangeStatus from '../components/DeleteChangeStatus';
 
 const Users: React.FC = () => {
-  const [users, setUsers] = useState<Users[]>([]);
+  const [users, setUsers] = useState<UserType[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState<string>('all');
   const [editingUserId, setEditingUserId] = useState<number | null>(null);

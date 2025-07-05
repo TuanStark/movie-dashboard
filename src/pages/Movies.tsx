@@ -108,27 +108,17 @@ export default function Movies() {
     });
   };
   
-  // CRUD handlers
+  // CRUD handlers - MovieForm handles API calls, these just handle UI state
   const handleAddMovie = async (movie: Omit<Movie, "id" | "createdAt" | "updatedAt">) => {
-    try {
-      await ServiceApi.post('/movies', movie);
-      setIsAddFormOpen(false);
-      await fetchMovies();
-    } catch (error) {
-      console.error('Error adding movie:', error);
-    }
+    // MovieForm already called the API, just update UI state and refresh list
+    setIsAddFormOpen(false);
+    await fetchMovies();
   };
-  
+
   const handleUpdateMovie = async (movie: Omit<Movie, "id" | "createdAt" | "updatedAt">) => {
-    if (!editingMovie) return;
-    
-    try {
-      await ServiceApi.patch(`/movies/${editingMovie.id}`, movie);
-      setEditingMovie(null);
-      await fetchMovies();
-    } catch (error) {
-      console.error('Error updating movie:', error);
-    }
+    // MovieForm already called the API, just update UI state and refresh list
+    setEditingMovie(null);
+    await fetchMovies();
   };
   
   const handleDeleteMovie = async () => {

@@ -1,5 +1,5 @@
 import { Film, User, Ticket, Building2, Newspaper, TrendingUp, Calendar, ArrowUpRight, MoreHorizontal, Star, ChevronRight, Activity, DollarSign, Users } from "lucide-react";
-import { movies, users, bookings, theaters, articles } from "../data/mock-data";
+import { movies, bookings, theaters, articles } from "../data/mock-data";
 import { useState } from "react";
 
 // Calculate statistics
@@ -17,7 +17,7 @@ const stats = [
   },
   {
     label: "Người dùng",
-    value: users.length,
+    value: 10,
     icon: <User size={20} className="text-green-500" />,
     trend: "+12%",
     trendUp: true,
@@ -223,7 +223,7 @@ export default function Dashboard() {
           </button>
         </div>
         
-        <div className="space-y-4">
+        {/* <div className="space-y-4">
           {users.slice(0, 5).map((user, index) => (
             <div key={index} className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
               <div className="flex items-center gap-3">
@@ -242,7 +242,7 @@ export default function Dashboard() {
               </div>
             </div>
           ))}
-        </div>
+        </div> */}
       </div>
 
       {/* Movies Tab */}

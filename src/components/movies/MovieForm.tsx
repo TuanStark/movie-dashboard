@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { Movie, Showtime, Genre, MovieGenre, Actor, ShowtimeInput, Theater } from '../../types/global-types';
+import type { Movie, Genre, MovieGenre, Actor } from '../../types/global-types';
 import { X, Plus, Clock, Film, Calendar, Star, Video, Tag, MapPin, Globe } from 'lucide-react';
 import ImageUpload from '../ImageUpload';
 import ServiceApi from '../../services/api';
@@ -43,31 +43,19 @@ const emptyMovie: MovieFormData = {
 //   date: '',
 //   time: '',
 //   price: 0
-// };
+// };setAvailableActors
 
 const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
   const [formData, setFormData] = useState<MovieFormData>(emptyMovie);
   const [genreInput, setGenreInput] = useState('');
   const [castInput, setCastInput] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [showtimes, setShowtimes] = useState<ShowtimeInput[]>([]);
-  const [showtimeErrors, setShowtimeErrors] = useState<Record<number, Record<string, string>>>({});
-  const [theaters, setTheaters] = useState<Theater[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [availableGenres, setAvailableGenres] = useState<Genre[]>([]);
   const [availableActors, setAvailableActors] = useState<Actor[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fetch theaters, genres, and actors
+  // Fetch genres and actors
   useEffect(() => {
-    const fetchTheaters = async () => {
-      try {
-        const response = await ServiceApi.get('/theaters');
-        setTheaters(response.data.data.data || []);
-      } catch (error) {
-        console.error('Error fetching theaters:', error);
-      }
-    };
-    
     const fetchGenres = async () => {
       try {
         const response = await ServiceApi.get('/genres');
@@ -76,17 +64,18 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
         console.error('Error fetching genres:', error);
       }
     };
-    
+
     const fetchActors = async () => {
       try {
         const response = await ServiceApi.get('/actors');
-        setAvailableActors(response.data.data.data || []);
+        console.log(response.data.data.data);
+        setAvailableActors(response.data.data.data);
       } catch (error) {
         console.error('Error fetching actors:', error);
       }
     };
-    
-    fetchTheaters();
+    console.log(availableActors)
+
     fetchGenres();
     fetchActors();
   }, []);
@@ -124,38 +113,15 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
         posterFile: null,
         backdropFile: null,
       });
-      
-      // Only fetch showtimes if we have a movie ID
-      if (movie.id) {
-        const fetchShowtimes = async () => {
-          try {
-            const response = await ServiceApi.get(`/showtimes/movie/${movie.id}`);
-            const movieShowtimes = response.data.data.data || [];
-            
-            setShowtimes(movieShowtimes.map((showtime: Showtime) => ({
-              theaterId: showtime.theaterId,
-              date: showtime.date,
-              time: showtime.time,
-              price: showtime.price
-            })));
-          } catch (error) {
-            console.error('Error fetching showtimes:', error);
-            // Set empty showtimes array on error
-            setShowtimes([]);
-          }
-        };
-        
-        fetchShowtimes();
-      }
+
     } else {
       setFormData(emptyMovie);
-      setShowtimes([]);
     }
   }, [movie]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target as HTMLInputElement;
-    
+
     setFormData({
       ...formData,
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
@@ -163,11 +129,10 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
   };
 
   const handlePosterChange = (imageData: string | File) => {
-    console.log(imageData);
     if (typeof imageData === 'string') {
       setFormData(prev => ({
         ...prev,
-        posterPath: imageData || '',
+        posterPath: imageData,
         posterFile: null
       }));
     } else if (imageData instanceof File) {
@@ -196,24 +161,32 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
   };
 
   const handleAddGenre = () => {
-    if (genreInput.trim() && !genreExists(genreInput.trim())) {
-      // Find if the genre already exists in our available genres
-      const existingGenre = availableGenres.find(g => g.name.toLowerCase() === genreInput.trim().toLowerCase());
-      
-      // Create new genre object
+    if (!genreInput.trim()) return;
+
+    // Double check to prevent duplicates
+    if (genreExists(genreInput.trim())) {
+      setGenreInput('');
+      return;
+    }
+
+    // Find the genre from available genres (should exist since we're selecting from dropdown)
+    const existingGenre = availableGenres.find(g => g.name === genreInput.trim());
+
+    if (existingGenre) {
+      // Create new genre object with valid genreId
       const newGenre: MovieGenre = {
         id: 0, // This will be set by the backend
         movieId: movie?.id || 0,
-        genreId: existingGenre?.id || 0,
-        genre: existingGenre || { id: 0, name: genreInput.trim() }
+        genreId: existingGenre.id,
+        genre: existingGenre
       };
-      
-      setFormData({
-        ...formData,
-        genres: [...formData.genres, newGenre]
-      });
-      setGenreInput('');
+
+      setFormData(prev => ({
+        ...prev,
+        genres: [...prev.genres, newGenre]
+      }));
     }
+    setGenreInput('');
   };
 
   const handleRemoveGenre = (genreName: string) => {
@@ -224,26 +197,35 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
   };
 
   const handleAddCastMember = () => {
-    if (castInput.trim()) {
-      // Tìm actor từ danh sách có sẵn
-      const selectedActor = availableActors.find(actor => 
-        actor.name.toLowerCase() === castInput.trim().toLowerCase()
-      );
-      
-      if (selectedActor && !formData.cast.includes(selectedActor.id)) {
-        setFormData(prev => ({
-          ...prev,
-          cast: [...prev.cast, selectedActor.id]
-        }));
-      }
+    if (!castInput.trim()) return;
+
+    // Tìm actor từ danh sách có sẵn
+    const selectedActor = availableActors.find(actor =>
+      actor.name.toLowerCase() === castInput.trim().toLowerCase()
+    );
+
+    if (!selectedActor) {
       setCastInput('');
+      return;
     }
+
+    // Double check to prevent duplicates
+    if (formData.cast.some(actor => actor.id === selectedActor.id)) {
+      setCastInput('');
+      return;
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      cast: [...prev.cast, selectedActor]
+    }));
+    setCastInput('');
   };
 
   const handleRemoveCastMember = (actorId: number) => {
     setFormData(prev => ({
       ...prev,
-      cast: prev.cast.filter(id => id !== actorId)
+      cast: prev.cast.filter(actor => actor.id !== actorId)
     }));
   };
 
@@ -257,7 +239,7 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
   //   const newShowtimes = [...showtimes];
   //   newShowtimes.splice(index, 1);
   //   setShowtimes(newShowtimes);
-    
+
   //   // Cập nhật lỗi
   //   const newErrors = { ...showtimeErrors };
   //   delete newErrors[index];
@@ -272,7 +254,7 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
   //     [field]: value
   //   };
   //   setShowtimes(newShowtimes);
-    
+
   //   // Xóa lỗi khi người dùng sửa
   //   if (showtimeErrors[index] && showtimeErrors[index][field as string]) {
   //     const newErrors = { ...showtimeErrors };
@@ -284,50 +266,14 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
   //   }
   // };
 
-  const validateShowtimes = (): boolean => {
-    const newErrors: Record<number, Record<string, string>> = {};
-    let isValid = true;
-    
-    showtimes.forEach((showtime, index) => {
-      const showtimeError: Record<string, string> = {};
-      
-      if (!showtime.theaterId) {
-        showtimeError.theaterId = 'Vui lòng chọn rạp chiếu phim';
-        isValid = false;
-      }
-      
-      if (!showtime.date) {
-        showtimeError.date = 'Vui lòng chọn ngày chiếu';
-        isValid = false;
-      }
-      
-      if (!showtime.time) {
-        showtimeError.time = 'Vui lòng nhập giờ chiếu';
-        isValid = false;
-      }
-      
-      if (!showtime.price || showtime.price <= 0) {
-        showtimeError.price = 'Giá vé phải lớn hơn 0';
-        isValid = false;
-      }
-      
-      if (Object.keys(showtimeError).length > 0) {
-        newErrors[index] = showtimeError;
-      }
-    });
-    
-    setShowtimeErrors(newErrors);
-    return isValid;
-  };
-
   const validate = () => {
     const newErrors: Record<string, string> = {};
     console.log('Running validation');
-    
+
     if (!formData.title.trim()) {
       newErrors.title = 'Vui lòng nhập tên phim';
     }
-    
+
     if (!formData.director.trim()) {
       newErrors.director = 'Vui lòng nhập tên đạo diễn';
     }
@@ -335,39 +281,40 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
     if (!formData.writer?.trim()) {
       newErrors.writer = 'Vui lòng nhập tên tác giả';
     }
-    
+
     if (!formData.duration.trim()) {
       newErrors.duration = 'Vui lòng nhập thời lượng phim';
     }
-    
+
     if (!formData.releaseDate) {
       newErrors.releaseDate = 'Vui lòng chọn ngày khởi chiếu';
     }
-    
+
     if (!formData.synopsis.trim()) {
       newErrors.synopsis = 'Vui lòng nhập tóm tắt phim';
     }
-    
+
     if (!formData.trailerUrl.trim()) {
       newErrors.trailerUrl = 'Vui lòng nhập URL trailer';
     }
-    
+
     if (!formData.posterPath && !formData.posterFile) {
       newErrors.posterPath = 'Vui lòng tải lên poster phim';
     }
-    
+
     if (!formData.backdropPath && !formData.backdropFile) {
       newErrors.backdropPath = 'Vui lòng tải lên ảnh nền';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Form submitted');
-    
+    // Prevent multiple submissions
+    if (isSubmitting) return;
+
     // Ensure actors has a default value
     if (!formData.actors) {
       setFormData(prev => ({
@@ -375,29 +322,23 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
         actors: 'actorsTest'
       }));
     }
-    
+
     const isMovieValid = validate();
-    const areShowtimesValid = validateShowtimes();
-    
-    console.log('Validation results:', { isMovieValid, areShowtimesValid });
-    console.log('Form data:', formData);
-    console.log('Errors:', errors);
-    
-    if (isMovieValid && areShowtimesValid) {
+
+    if (isMovieValid) {
+      setIsSubmitting(true);
       try {
-        console.log('Starting API call');
-        
         // Prepare movie data
         const formDataObj = new FormData();
         // Handle file uploads
         if (formData.posterFile instanceof File) {
           formDataObj.append('posterFile', formData.posterFile);
-        }else{
+        } else if (formData.posterPath) {
           formDataObj.append('posterPath', formData.posterPath);
         }
         if (formData.backdropFile instanceof File) {
           formDataObj.append('backdropFile', formData.backdropFile);
-        }else{
+        } else if (formData.backdropPath) {
           formDataObj.append('backdropPath', formData.backdropPath);
         }
 
@@ -408,21 +349,26 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
         formDataObj.append('rating', formData.rating.toString());
         formDataObj.append('trailerUrl', formData.trailerUrl);
         formDataObj.append('upcoming', formData.upcoming.toString());
-        formDataObj.append('genreIds', JSON.stringify(formData.genres.map(g => g.genreId)));
-        formDataObj.append('castIds', JSON.stringify(formData.cast));
+        // Filter out invalid genre IDs (0 or undefined) and only send valid existing genre IDs
+        const validGenreIds = formData.genres
+          .map(g => g.genreId)
+          .filter(id => id && id > 0);
+        formDataObj.append('genreIds', JSON.stringify(validGenreIds));
+        const validCastIds = formData.cast
+          .map(actor => actor.id)
+          .filter(id => id && id > 0);
+        formDataObj.append('castIds', JSON.stringify(validCastIds));
         formDataObj.append('synopsis', formData.synopsis);
         formDataObj.append('writer', formData.writer || 'Unknown');
         formDataObj.append('language', formData.language || '');
         formDataObj.append('country', formData.country || '');
         formDataObj.append('actors', formData.actors);
 
-        console.log('Form data being sent:', Object.fromEntries(formDataObj.entries()));
-
         // Determine if this is an update or create operation
         const isUpdate = movie && movie.id;
         const url = isUpdate ? `${import.meta.env.VITE_URL}movies/${movie.id}` : `${import.meta.env.VITE_URL}movies`;
         const method = isUpdate ? 'PATCH' : 'POST';
-  
+
         // Send movie data
         const response = await fetch(url, {
           method: method,
@@ -431,11 +377,9 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
           },
           body: formDataObj
         });
-        
-        console.log('API Response:', response);
+
         const responseData = await response.json();
-        console.log('Response data:', responseData);
-  
+
         if (response.ok) {
           // Success - call onSubmit with the theater data
           onSubmit({
@@ -475,14 +419,14 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
               {movie ? 'Chỉnh sửa phim' : 'Thêm phim mới'}
             </h2>
           </div>
-          <button 
+          <button
             onClick={onCancel}
             className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
           >
             <X size={20} />
           </button>
         </div>
-        
+
         <form onSubmit={handleSubmit} className="p-6 space-y-8">
           {/* Basic Information Section */}
           <div className="space-y-6">
@@ -490,7 +434,7 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
               <Film size={20} />
               <h3>Thông tin cơ bản</h3>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Title */}
               <div className="space-y-2">
@@ -503,9 +447,8 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
                   name="title"
                   value={formData.title}
                   onChange={handleChange}
-                  className={`w-full px-4 py-2.5 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 ${
-                    errors.title ? 'border-2 border-error-500' : ''
-                  }`}
+                  className={`w-full px-4 py-2.5 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 ${errors.title ? 'border-2 border-error-500' : ''
+                    }`}
                   placeholder="Nhập tên phim"
                 />
                 {errors.title && (
@@ -524,9 +467,8 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
                   name="director"
                   value={formData.director}
                   onChange={handleChange}
-                  className={`w-full px-4 py-2.5 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 ${
-                    errors.director ? 'border-2 border-error-500' : ''
-                  }`}
+                  className={`w-full px-4 py-2.5 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 ${errors.director ? 'border-2 border-error-500' : ''
+                    }`}
                   placeholder="Nhập tên đạo diễn"
                   required
                 />
@@ -543,9 +485,8 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
                   name="writer"
                   value={formData.writer || ''}
                   onChange={handleChange}
-                  className={`w-full px-4 py-2.5 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 ${
-                    errors.writer ? 'border-2 border-error-500' : ''
-                  }`}
+                  className={`w-full px-4 py-2.5 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 ${errors.writer ? 'border-2 border-error-500' : ''
+                    }`}
                   placeholder="Nhập tên tác giả"
                   required
                 />
@@ -586,9 +527,8 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
                     name="releaseDate"
                     value={formData.releaseDate}
                     onChange={handleChange}
-                    className={`w-full pl-10 pr-4 py-2.5 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 ${
-                      errors.releaseDate ? 'border-2 border-error-500' : ''
-                    }`}
+                    className={`w-full pl-10 pr-4 py-2.5 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 ${errors.releaseDate ? 'border-2 border-error-500' : ''
+                      }`}
                   />
                 </div>
                 {errors.releaseDate && (
@@ -612,9 +552,8 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
                     step="0.1"
                     value={formData.rating}
                     onChange={handleChange}
-                    className={`w-full pl-10 pr-4 py-2.5 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 ${
-                      errors.rating ? 'border-2 border-error-500' : ''
-                    }`}
+                    className={`w-full pl-10 pr-4 py-2.5 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 ${errors.rating ? 'border-2 border-error-500' : ''
+                      }`}
                     placeholder="Nhập điểm đánh giá"
                   />
                 </div>
@@ -642,7 +581,7 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
                 </div>
               </div>
 
-                {/* Language */}
+              {/* Language */}
               <div className="space-y-2">
                 <label htmlFor="language" className="block text-sm font-medium">
                   Ngôn ngữ
@@ -655,9 +594,8 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
                     name="language"
                     value={formData.language}
                     onChange={handleChange}
-                    className={`w-full pl-10 pr-4 py-2.5 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 ${
-                      errors.rating ? 'border-2 border-error-500' : ''
-                    }`}
+                    className={`w-full pl-10 pr-4 py-2.5 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 ${errors.rating ? 'border-2 border-error-500' : ''
+                      }`}
                     placeholder="Nhập ngôn ngữ"
                   />
                 </div>
@@ -748,24 +686,21 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
               Diễn viên
             </label>
             <div className="flex flex-wrap gap-2 mb-2">
-              {formData.cast.map((actorId) => {
-                const actor = availableActors.find(a => a.id === actorId);
-                return actor && (
-                  <span
-                    key={actor.id}
-                    className="inline-flex items-center gap-1 px-3 py-1 text-sm bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full"
+              {formData.cast.map((actor) => (
+                <span
+                  key={actor.id}
+                  className="inline-flex items-center gap-1 px-3 py-1 text-sm bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full"
+                >
+                  {actor.name}
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveCastMember(actor.id)}
+                    className="p-0.5 hover:bg-primary-100 dark:hover:bg-primary-800 rounded-full"
                   >
-                    {actor.name}
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveCastMember(actor.id)}
-                      className="p-0.5 hover:bg-primary-100 dark:hover:bg-primary-800 rounded-full"
-                    >
-                      <X size={14} />
-                    </button>
-                  </span>
-                );
-              })}
+                    <X size={14} />
+                  </button>
+                </span>
+              ))}
             </div>
             <div className="flex gap-2">
               <select
@@ -775,7 +710,7 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
               >
                 <option value="">Chọn diễn viên</option>
                 {availableActors.map((actor) => (
-                  !formData.cast.includes(actor.id) && (
+                  !formData.cast.some(castActor => castActor.id === actor.id) && (
                     <option key={actor.id} value={actor.name}>
                       {actor.name}
                     </option>
@@ -797,7 +732,7 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
             <div className="flex items-center gap-2 text-lg font-medium text-gray-800 dark:text-gray-200">
               <div>Tóm tắt nội dung</div>
             </div>
-            
+
             <textarea
               id="synopsis"
               name="synopsis"
@@ -869,9 +804,13 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
             </button>
             <button
               type="submit"
-              className="px-4 py-2.5 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
+              disabled={isSubmitting}
+              className={`px-4 py-2.5 text-white rounded-lg transition-colors ${isSubmitting
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-primary-500 hover:bg-primary-600'
+                }`}
             >
-              {movie ? 'Cập nhật' : 'Thêm mới'}
+              {isSubmitting ? 'Đang xử lý...' : (movie ? 'Cập nhật' : 'Thêm mới')}
             </button>
           </div>
         </form>

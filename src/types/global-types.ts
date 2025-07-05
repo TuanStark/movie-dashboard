@@ -2,7 +2,7 @@ export interface Actor {
     id: number;
     name: string;
     photo?: string;
-    createdAt: string;
+    // createdAt: string;
     updatedAt: string;
   }
 
@@ -36,7 +36,7 @@ export interface Movie {
   country?: string;
   language?: string;
   actors: string;
-  cast: number[];
+  cast: Actor[];
   releaseDate: string;
   trailerUrl: string;
   upcoming: boolean;
