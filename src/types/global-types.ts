@@ -4,7 +4,18 @@ export interface Actor {
     photo?: string;
     // createdAt: string;
     updatedAt: string;
-  }
+}
+
+export interface Cast {
+  id: number;
+  actorId: number;
+  MoviId: number;
+  // createdAt: string;
+  updatedAt: string;
+  actor: Actor;
+  movie: Movie;
+}
+
 
 export interface Genre {
   id: number;
@@ -36,7 +47,7 @@ export interface Movie {
   country?: string;
   language?: string;
   actors: string;
-  cast: Actor[];
+  casts: Cast[];
   releaseDate: string;
   trailerUrl: string;
   upcoming: boolean;
