@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { Movie, Showtime, MovieGenre } from '../../types/global-types';
+import type { Movie, Showtime, MovieGenre  } from '../../types/global-types';
 import { X, Star, Clock, Calendar, Video, ExternalLink, MapPin, Calendar as CalendarIcon } from 'lucide-react';
 import ServiceApi from '../../services/api';
 import { formatDateTime } from '../../types/format-datetime';

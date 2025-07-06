@@ -776,7 +776,7 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
                   initialImage={formData.posterPath}
                   onImageSelect={handlePosterChange}
                   label="Tải lên poster phim"
-                  maxSize={1000000}
+                  maxSize={3000000}
                   accept="image/jpeg,image/png"
                 />
                 {errors.posterPath && (
@@ -790,7 +790,7 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
                   initialImage={formData.backdropPath}
                   onImageSelect={handleBackdropChange}
                   label="Tải lên ảnh nền"
-                  maxSize={2000000}
+                  maxSize={3000000}
                   accept="image/jpeg,image/png"
                 />
               </div>
