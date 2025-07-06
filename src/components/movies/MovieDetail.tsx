@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import type { Movie, Showtime, MovieGenre, Actor } from '../../types/global-types';
-import { X, Star, Clock, Calendar, Video, ExternalLink, MapPin, DollarSign, Calendar as CalendarIcon } from 'lucide-react';
+import type { Movie, Showtime, MovieGenre } from '../../types/global-types';
+import { X, Star, Clock, Calendar, Video, ExternalLink, MapPin, Calendar as CalendarIcon } from 'lucide-react';
 import ServiceApi from '../../services/api';
 import { formatDateTime } from '../../types/format-datetime';
 import formatMoney from '../../types/format-money';
@@ -28,15 +28,6 @@ const MovieDetail: React.FC<MovieDetailProps> = ({ movie, onClose, onEdit, onDel
   const getGenreNames = (genres: MovieGenre[]): string[] => {
     return genres.map(mg => mg.genre?.name || '').filter(name => name !== '');
   };
-
-  const getActorName = (actor: Actor[]): string[] => {
-    return actor.map(ac => ac.name || '').filter(name => name !== '');
-  }
-
-  const cast = movie.casts;
-  console.log(cast.map((act) => (
-    act.actor.name
-  )));
   // Fetch showtimes and theaters
   useEffect(() => {
     const fetchShowtimes = async () => {
@@ -60,8 +51,6 @@ const MovieDetail: React.FC<MovieDetailProps> = ({ movie, onClose, onEdit, onDel
     fetchShowtimes();
     fetchTheaters();
   }, [movie.id]);
-
-  console.log(movieShowtimes)
 
   // Lấy danh sách các ngày có suất chiếu của phim
   const availableDates = [...new Set(movieShowtimes.map(showtime => showtime.date))].sort();
@@ -185,15 +174,17 @@ const MovieDetail: React.FC<MovieDetailProps> = ({ movie, onClose, onEdit, onDel
                   <span className="font-medium">Đạo diễn:</span> {movie.director}
                 </div>
                 <div>
-                  <span className="font-medium">Diễn viên:</span> {cast.map((act, index) => (
+                  <span className="font-medium mr-1">Diễn viên:</span>
+                  {(movie.casts.length > 0? movie.casts.map((act, index) => (
                     <span
                       key={`genre-detail-${index}`}
                       className="px-2 py-1 bg-blue-200 rounded-full text-xs mr-1"
                     >
                       {act.actor.name}
                     </span>
-                  ))
-                  }
+                  )) : (
+                    <span>{movie?.actors}</span>
+                  ))}
                 </div>
                 <div>
                   <span className="font-medium">Ngày phát hành:</span> {formatDateTime(movie.releaseDate)}

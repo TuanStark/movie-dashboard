@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { Movie, Genre, MovieGenre, Actor } from '../../types/global-types';
-import { X, Plus, Clock, Film, Calendar, Star, Video, Tag, MapPin, Globe } from 'lucide-react';
+import { X, Plus, Clock, Film, Calendar, Star, Video, Tag, MapPin, Globe, User } from 'lucide-react';
 import ImageUpload from '../ImageUpload';
 import ServiceApi from '../../services/api';
 
@@ -26,14 +26,14 @@ const emptyMovie: MovieFormData = {
   synopsis: '',
   duration: '',
   director: '',
-  cast: [],
+  casts: [],
   releaseDate: '',
   trailerUrl: '',
   upcoming: false,
   writer: '',
   language: '',
   country: '',
-  actors: 'actorsTest',
+  actors: '',
   posterFile: null,
   backdropFile: null
 };
@@ -102,14 +102,14 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
         synopsis: movie.synopsis || '',
         duration: movie.duration || '',
         director: movie.director || '',
-        cast: movie.cast || [],
+        casts: movie.casts || [],
         releaseDate: movie.releaseDate || '',
         trailerUrl: movie.trailerUrl || '',
         upcoming: movie.upcoming || false,
         writer: movie.writer || '',
         language: movie.language || '',
         country: movie.country || '',
-        actors: movie.actors || 'actorsTest',
+        actors: movie.actors || '',
         posterFile: null,
         backdropFile: null,
       });
@@ -210,14 +210,14 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
     }
 
     // Double check to prevent duplicates
-    if (formData.cast.some(actor => actor.id === selectedActor.id)) {
+    if (formData.casts.some(actor => actor.actorId === selectedActor.id)) {
       setCastInput('');
       return;
     }
 
     setFormData(prev => ({
       ...prev,
-      cast: [...prev.cast, selectedActor]
+      cast: [...prev.casts, selectedActor]
     }));
     setCastInput('');
   };
@@ -225,7 +225,7 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
   const handleRemoveCastMember = (actorId: number) => {
     setFormData(prev => ({
       ...prev,
-      cast: prev.cast.filter(actor => actor.id !== actorId)
+      cast: prev.casts.filter(actor => actor.actorId !== actorId)
     }));
   };
 
@@ -354,15 +354,15 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
           .map(g => g.genreId)
           .filter(id => id && id > 0);
         formDataObj.append('genreIds', JSON.stringify(validGenreIds));
-        const validCastIds = formData.cast
-          .map(actor => actor.id)
+        const validCastIds = formData.casts
+          .map(actor => actor.actorId)
           .filter(id => id && id > 0);
         formDataObj.append('castIds', JSON.stringify(validCastIds));
         formDataObj.append('synopsis', formData.synopsis);
         formDataObj.append('writer', formData.writer || 'Unknown');
         formDataObj.append('language', formData.language || '');
         formDataObj.append('country', formData.country || '');
-        formDataObj.append('actors', formData.actors);
+        formDataObj.append('actors', formData.actors || '');
 
         // Determine if this is an update or create operation
         const isUpdate = movie && movie.id;
@@ -385,7 +385,7 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
           onSubmit({
             ...formData,
             genres: formData.genres,
-            cast: formData.cast
+            casts: formData.casts
           });
         } else {
           throw new Error(responseData.message || `Failed to ${isUpdate ? 'update' : 'create'} movie`);
@@ -622,6 +622,25 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
                   />
                 </div>
               </div>
+
+              {/* Actor */}
+              <div className="space-y-2">
+                <label htmlFor="country" className="block text-sm font-medium">
+                  Diễn Viên
+                </label>
+                <div className="relative">
+                  <User size={16} className="absolute left-3 top-3 text-gray-400" />
+                  <input
+                    type="text"
+                    id="actors"
+                    name="actors"
+                    value={formData.actors}
+                    onChange={handleChange}
+                    className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-primary-500"
+                    placeholder="Nhập diễn viên"
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
@@ -686,12 +705,12 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
               Diễn viên
             </label>
             <div className="flex flex-wrap gap-2 mb-2">
-              {formData.cast.map((actor) => (
+              {formData.casts.map((actor) => (
                 <span
-                  key={actor.id}
+                  key={actor.actor.id}
                   className="inline-flex items-center gap-1 px-3 py-1 text-sm bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full"
                 >
-                  {actor.name}
+                  {actor.actor.name}
                   <button
                     type="button"
                     onClick={() => handleRemoveCastMember(actor.id)}
@@ -710,7 +729,7 @@ const MovieForm: React.FC<MovieFormProps> = ({ movie, onSubmit, onCancel }) => {
               >
                 <option value="">Chọn diễn viên</option>
                 {availableActors.map((actor) => (
-                  !formData.cast.some(castActor => castActor.id === actor.id) && (
+                  !formData.casts.some(castActor => castActor.actor.id === actor.id) && (
                     <option key={actor.id} value={actor.name}>
                       {actor.name}
                     </option>
