@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { X, Calendar, User, Film, Check, Clock, Ban, CheckCircle } from "lucide-react";
+import React from "react";
+import { X, Calendar, User, Film, Clock, Ban, CheckCircle } from "lucide-react";
 import type { Bookings } from "../types/global-types";
 import formatMoney from "../types/format-money";
 import { formatDateTime } from "../types/format-datetime";
@@ -11,7 +11,6 @@ interface BookingDetailProps {
 }
 
 const BookingDetail: React.FC<BookingDetailProps> = ({ booking, onClose, onEditStatus }) => {
-  const [isOpen, setIsOpen] = useState(false);
 
   const user = booking.user;
   const movie = booking?.showtime?.movie;
@@ -20,7 +19,7 @@ const BookingDetail: React.FC<BookingDetailProps> = ({ booking, onClose, onEditS
     { value: "CONFIRMED", label: "Đã xác nhận", icon: <CheckCircle size={16} className="text-success-500" />, color: "bg-success-100 text-success-700 dark:bg-success-900/30 dark:text-success-300" },
     { value: "PENDING", label: "Đang chờ", icon: <Clock size={16} className="text-warning-500" />, color: "bg-warning-100 text-warning-700 dark:bg-warning-900/30 dark:text-warning-300" },
     { value: "CANCELLED", label: "Đã hủy", icon: <Ban size={16} className="text-error-500" />, color: "bg-error-100 text-error-700 dark:bg-error-900/30 dark:text-error-300" },
-    { value: "COMPLETED", label: "Đã hoàn thành", icon: <Check size={16} className="text-primary-500" />, color: "bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300" }
+    // { value: "COMPLETED", label: "Đã hoàn thành", icon: <Check size={16} className="text-primary-500" />, color: "bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300" }
   ];
 
   const handleStatusChange = async (id: number, status: string) => {
@@ -40,10 +39,10 @@ const BookingDetail: React.FC<BookingDetailProps> = ({ booking, onClose, onEditS
     const responseData = await response.json();
 
     if (response.ok) {
-      await onEditStatus();
-      await onClose();
+      onEditStatus();
+      onClose();
     } else {
-      throw new Error(responseData.message || `Failed to update movie`);
+      throw new Error(responseData.message || `Failed to update booking`);
     }
   };
 
@@ -66,17 +65,24 @@ const BookingDetail: React.FC<BookingDetailProps> = ({ booking, onClose, onEditS
             <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Trạng thái</h3>
             <div className="flex flex-wrap gap-2">
               {statusOptions.map(option => (
-                <button
-                  key={option.value}
-                  className={`px-3 py-2 rounded-lg flex items-center gap-2 transition-all ${status === option.value
-                    ? option.color + " ring-2 ring-offset-2 ring-offset-white dark:ring-offset-gray-900 ring-" + option.value + "-500/50"
-                    : "bg-gray-100/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 hover-lift"
-                    }`}
-                  onClick={() => handleStatusChange(booking.id, option.value)}
-                >
-                  {option.icon}
-                  <span>{option.label}</span>
-                </button>
+                booking.status === option.value ? (
+                  <span
+                    key={option.value}
+                    className={`px-3 py-2 rounded-lg flex items-center gap-2 transition-all ${option.color}`}
+                  >
+                    {option.icon}
+                    <span>{option.label}</span>
+                  </span>
+                ) : (
+                  <button
+                    key={option.value}
+                    className={`px-3 py-2 rounded-lg flex items-center gap-2 transition-all bg-gray-100/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 hover-lift`}
+                    onClick={() => handleStatusChange(booking.id, option.value)}
+                  >
+                    {option.icon}
+                    <span>{option.label}</span>
+                  </button>
+                )
               ))}
             </div>
           </div>
@@ -141,14 +147,14 @@ const BookingDetail: React.FC<BookingDetailProps> = ({ booking, onClose, onEditS
             </div>
           </div>
 
-          {/* Infor banking */}
+          {/* Payment Information */}
           <div className="p-4 bg-gray-50/80 dark:bg-gray-800/80 rounded-xl space-y-3">
             <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center gap-2">
               <Film size={16} />
-              Xác nhận chuyển khoản
+              Phương thức thanh toán
             </h3>
             <div className="flex gap-4">
-              {booking && (
+              {/* {booking && (
                 <div className="w-20 h-28 rounded-md overflow-hidden shadow-sm cursor-pointer"
                   onClick={() => setIsOpen(true)}>
                   <img
@@ -156,7 +162,7 @@ const BookingDetail: React.FC<BookingDetailProps> = ({ booking, onClose, onEditS
                     className="w-full h-full object-cover"
                   />
                 </div>
-              )}
+              )} */}
               <span className="text-lg">{booking.paymentMethod}</span>
             </div>
           </div>
@@ -185,9 +191,9 @@ const BookingDetail: React.FC<BookingDetailProps> = ({ booking, onClose, onEditS
                 {booking.seats.map((seat, index) => (
                   <span
                     key={index}
-                    className={`${seat.seat.type == 'VIP' ? "bg-yellow-500 text-white" : "bg-gray-500 text-white"} px-3 py-1 rounded-lg font-medium`}
+                    className={`${seat.seat.type === 'VIP' ? "bg-yellow-500 text-white" : "bg-gray-500 text-white"} px-3 py-1 rounded-lg font-medium`}
                   >
-                    {seat.seat.number}{seat.seat.row}
+                    {seat.seat.row}{seat.seat.number}
                   </span>
                 ))}
               </div>
@@ -204,20 +210,7 @@ const BookingDetail: React.FC<BookingDetailProps> = ({ booking, onClose, onEditS
           </button>
         </div>
 
-        {/* Modal hiển thị ảnh phóng to */}
-        {isOpen && (
-          <div
-            className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center"
-            onClick={() => setIsOpen(false)}
-          >
-            <img
-              src={booking.images}
-              alt="Phóng to ảnh"
-              className="max-w-full max-h-full rounded-lg shadow-lg"
-              onClick={(e) => e.stopPropagation()} // ngăn đóng modal khi bấm vào ảnh
-            />
-          </div>
-        )}
+
       </div>
     </div>
   );

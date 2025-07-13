@@ -155,3 +155,10 @@ export interface Articles{
   createdAt?: string;
   updatedAt?: string;
 }
+
+export interface Meta{
+  total: number;
+  pageNumber: number;
+  limitNumber: number;
+  totalPages: number;
+}

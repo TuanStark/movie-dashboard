@@ -1,31 +1,53 @@
 import { useEffect, useState } from "react";
 import { Ticket, Search, User, Calendar, DollarSign, CheckCircle, Clock, Ban, Check, Eye } from "lucide-react";
 import BookingDetail from "../components/BookingDetail";
-import type { Bookings } from "../types/global-types";
+import type { Bookings, Meta } from "../types/global-types";
 import ServiceApi from "../services/api";
 import { formatDateTime } from "../types/format-datetime";
 import formatMoney from "../types/format-money";
+import useQuery from "../hooks/useQuery";
+import Pagination from "../components/pagination";
 
 export default function Bookings() {
   const [bookings, setBookings] = useState<Bookings[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState<"date" | "price">("date");
+  const [meta, setMeta] = useState<Meta | null>(null);
+  const [sortBy, setSortBy] = useState<"status" | "date" | "price">("status");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [selectedBooking, setSelectedBooking] = useState<typeof bookings[0] | null>(null);
 
+  const [query, updateQuery, resetQuery] = useQuery({
+      page: 1,
+      limit: 8,
+      search: searchTerm,
+      sortBy: sortBy,
+      sortOrder: 'desc',
+    });
   
-  const [loading, setLoading] = useState(true);
+    // Fetch movies when query changes
+    useEffect(() => {
+      fetchBookings();
+    }, [query]);
+
+  
+  // const [loading, setLoading] = useState(true);
 
   const fetchBookings = async () => {
     try {
-      setLoading(true);
-      const response = await ServiceApi.get('/booking');
+      // Build params object, ensuring boolean values are properly handled
+      const params: any = {
+        page: query.page,
+        limit: query.limit,
+        search: query.search,
+        sortBy: query.sort,
+        sortOrder: query.order,
+      };
+      const response = await ServiceApi.get('/booking', { params });
       setBookings(response.data.data.data || []);
+      setMeta(response.data.data.meta);
     } catch (error) {
-      console.error('Error fetching showtimes:', error);
-    } finally {
-      setLoading(false);
+      console.error('Error fetching movies:', error);
     }
   };
 
@@ -33,12 +55,9 @@ export default function Bookings() {
     fetchBookings();
   }, []);
 
-  // console.log(bookings)
-
-
-  if(!bookings){
-    loading
-  }
+  // if(!bookings){
+  //   loading
+  // }
 
   const handleEditStatus = async ()=>{
     fetchBookings();
@@ -295,6 +314,17 @@ export default function Bookings() {
           </div>
         </div>
       </div>
+
+      {meta && (
+        <Pagination
+          page={meta.pageNumber}
+          limit={meta.limitNumber}
+          total={meta.total}
+          setPage={(newPage) => {
+            updateQuery({ page: newPage });
+          }}
+        />
+      )}
       
       {selectedBooking && (
         <BookingDetail

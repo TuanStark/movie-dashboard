@@ -3,10 +3,11 @@ import { Search, Filter, Star, Clock, Calendar, ChevronDown, ChevronUp, Plus, Tr
 import MovieForm from "../components/movies/MovieForm";
 import MovieDetail from "../components/movies/MovieDetail";
 import DeleteConfirmation from "../components/DeleteConfirmation";
-import type { Movie, Showtime, Genre, MovieGenre } from "../types/global-types";
+import type { Meta, Movie, MovieGenre } from "../types/global-types";
 import useQuery from "../hooks/useQuery";
 import ServiceApi from "../services/api";
 import { formatDateTime } from "../types/format-datetime";
+import Pagination from "../components/pagination";
 
 export default function Movies() {
   const [movies, setMovies] = useState<Movie[]>([]);
@@ -15,6 +16,7 @@ export default function Movies() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedGenre, setSelectedGenre] = useState<string>("all");
+  const [meta, setMeta] = useState<Meta | null>(null);
   
   // CRUD state
   const [isAddFormOpen, setIsAddFormOpen] = useState(false);
@@ -22,30 +24,10 @@ export default function Movies() {
   const [viewingMovie, setViewingMovie] = useState<Movie | null>(null);
   const [deletingMovie, setDeletingMovie] = useState<Movie | null>(null);
 
-  // Fetch movies from API
-  const fetchMovies = async () => {
-    try {
-      const response = await ServiceApi.get('/movies', {
-        params: {
-          page: query.page,
-          limit: query.limit,
-          search: query.search,
-          genre: query.genre !== 'all' ? query.genre : undefined,
-          sort: query.sort,
-          order: query.order,
-          upcoming: query.upcoming
-        }
-      });
-      setMovies(response.data.data.data || []);
-    } catch (error) {
-      console.error('Error fetching movies:', error);
-    }
-  };
-
   // Khởi tạo query và lấy dữ liệu
   const [query, updateQuery, resetQuery] = useQuery({
     page: 1,
-    limit: 10,
+    limit: 8,
     search: searchTerm,
     genre: selectedGenre,
     sort: sortField,
@@ -57,6 +39,29 @@ export default function Movies() {
   useEffect(() => {
     fetchMovies();
   }, [query]);
+
+  const fetchMovies = async () => {
+    try {
+      // Build params object, ensuring boolean values are properly handled
+      const params: any = {
+        page: query.page,
+        limit: query.limit,
+        search: query.search,
+        genre: query.genre !== 'all' ? query.genre : undefined,
+        sort: query.sort,
+        order: query.order,
+      };
+
+      if (query.upcoming === true) {
+        params.upcoming = true;
+      }
+      const response = await ServiceApi.get('/movies', { params });
+      setMovies(response.data.data.data || []);
+      setMeta(response.data.data.meta);
+    } catch (error) {
+      console.error('Error fetching movies:', error);
+    }
+  };
 
   // Helper function to get genre names from MovieGenre objects
   const getGenreNames = (genres: MovieGenre[]): string[] => {
@@ -108,15 +113,12 @@ export default function Movies() {
     });
   };
   
-  // CRUD handlers - MovieForm handles API calls, these just handle UI state
-  const handleAddMovie = async (movie: Omit<Movie, "id" | "createdAt" | "updatedAt">) => {
-    // MovieForm already called the API, just update UI state and refresh list
+  const handleAddMovie = async () => {
     setIsAddFormOpen(false);
     await fetchMovies();
   };
 
-  const handleUpdateMovie = async (movie: Omit<Movie, "id" | "createdAt" | "updatedAt">) => {
-    // MovieForm already called the API, just update UI state and refresh list
+  const handleUpdateMovie = async () => {
     setEditingMovie(null);
     await fetchMovies();
   };
@@ -393,6 +395,16 @@ export default function Movies() {
             </tbody>
           </table>
         </div>
+      )}
+      {meta && (
+        <Pagination
+          page={meta.pageNumber}
+          limit={meta.limitNumber}
+          total={meta.total}
+          setPage={(newPage) => {
+            updateQuery({ page: newPage });
+          }}
+        />
       )}
 
       {/* Add Movie Form */}

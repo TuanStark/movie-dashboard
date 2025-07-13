@@ -8,11 +8,7 @@ import ServiceApi from '../services/api';
 import { formatDateTime } from '../types/format-datetime';
 import { toast } from 'react-toastify'; // Thêm toast để hiển thị thông báo
 
-// Use the Articles interface directly since it already has all the needed properties
-interface Article extends Articles {
-  // Articles already includes: id, title, excerpt, content, categoryId, readTime, imagePath, date, authorId, author: Users, category: Categories, createdAt?, updatedAt?
-  // No need to redeclare these properties
-}
+interface Article extends Articles { }
 
 const Articles: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -26,21 +22,19 @@ const Articles: React.FC = () => {
   const [deletingArticleId, setDeletingArticleId] = useState<number | null>(null);
   const [currentArticle, setCurrentArticle] = useState<Article | null>(null);
 
-  // Hàm lấy danh sách bài viết
   const fetchArticle = async () => {
     try {
       setLoading(true);
-      const response = await ServiceApi.get('/article'); // Sửa endpoint thành /articles
+      const response = await ServiceApi.get('/articles');
       setArticles(response.data.data.data);
     } catch (error) {
       console.error('Lỗi khi lấy danh sách bài viết:', error);
-      toast.error('Không thể tải danh sách bài viết. Vui lòng thử lại.'); // Hiển thị thông báo lỗi
+      toast.error('Không thể tải danh sách bài viết. Vui lòng thử lại.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Hàm lấy danh sách danh mục
   const fetchArticleCategory = async () => {
     try {
       setLoading(true);
@@ -53,12 +47,10 @@ const Articles: React.FC = () => {
       setLoading(false);
     }
   };
-  // console.log('Category state:', category);
 
-  // Hàm lấy chi tiết bài viết
   const handleGetArticle = async (id: number): Promise<Article | null> => {
     try {
-      const response = await ServiceApi.get(`/article/${id}`); // Sửa endpoint
+      const response = await ServiceApi.get(`/articles/${id}`);
       return response.data || null;
     } catch (error) {
       console.error('Lỗi khi lấy bài viết:', error);
@@ -67,12 +59,11 @@ const Articles: React.FC = () => {
     }
   };
 
-  // Đồng bộ hóa việc lấy dữ liệu khi component mount
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        await Promise.all([fetchArticle(), fetchArticleCategory()]); // Gọi đồng thời để tối ưu
+        await Promise.all([fetchArticle(), fetchArticleCategory()]);
       } catch (error) {
         console.error('Lỗi khi tải dữ liệu:', error);
         toast.error('Lỗi khi tải dữ liệu ban đầu.');
@@ -82,49 +73,31 @@ const Articles: React.FC = () => {
     };
     fetchData();
   }, []);
-  // console.log('Articles state:', articles);
 
-  // Lọc bài viết theo tìm kiếm và danh mục
   const filteredArticles = Array.isArray(articles) ? articles.filter(article => {
     const matchesSearch = article.title.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || article.categoryId === Number(selectedCategory);
     return matchesSearch && matchesCategory;
   }) : [];
 
-  // Thêm bài viết mới
   const handleAddArticle = async (formData: FormData) => {
-    console.log('=== HANDLE ADD ARTICLE START ===');
-    console.log('Received FormData:', formData);
-
-    // Log FormData contents
-    console.log('FormData contents in handleAddArticle:');
     for (let [key, value] of formData.entries()) {
       console.log(`${key}:`, value);
     }
-
     try {
-      console.log('Sending request to backend...');
       const token = localStorage.getItem('accessToken');
-      console.log('Auth token exists:', !!token);
 
-      // Use fetch API to send FormData (ServiceApi might not handle FormData properly)
-      const response = await fetch('http://localhost:8000/article', {
+      const response = await fetch(`${import.meta.env.VITE_URL}/articles`, {
         method: 'POST',
         body: formData,
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-
-      console.log('Response status:', response.status);
-      console.log('Response ok:', response.ok);
-
       const responseData = await response.json();
-      console.log('Response data:', responseData);
 
       if (response.ok) {
-        console.log('Article created successfully, refreshing list...');
-        await fetchArticle(); // Làm mới danh sách
+        await fetchArticle();
         setShowAddForm(false);
         toast.success('Thêm bài viết thành công!');
       } else {
@@ -132,22 +105,14 @@ const Articles: React.FC = () => {
         throw new Error(responseData.message || 'Failed to create article');
       }
     } catch (error: any) {
-      console.error('=== ERROR IN HANDLE ADD ARTICLE ===');
-      console.error('Error details:', error);
-      console.error('Error message:', error.message);
-      console.error('Error stack:', error.stack);
       toast.error(error.message || 'Không thể thêm bài viết.');
     }
-    console.log('=== HANDLE ADD ARTICLE END ===');
   };
 
   // Cập nhật bài viết
   const handleUpdateArticle = async (id: number, formData: FormData) => {
     try {
-      console.log('Updating article with FormData:', formData);
-
-      // Use fetch API to send FormData for update
-      const response = await fetch(`http://localhost:8000/article/${id}`, {
+      const response = await fetch(`${import.meta.env.VITE_URL}/articles/${id}`, {
         method: 'PATCH',
         body: formData,
         headers: {
@@ -156,7 +121,6 @@ const Articles: React.FC = () => {
       });
 
       const responseData = await response.json();
-      console.log('Update article response:', responseData);
 
       if (response.ok) {
         await fetchArticle(); // Làm mới danh sách
@@ -176,7 +140,7 @@ const Articles: React.FC = () => {
   const handleDeleteArticle = async () => {
     if (deletingArticleId !== null) {
       try {
-        const response = await ServiceApi.delete(`/article/${deletingArticleId}`);
+        const response = await ServiceApi.delete(`/articles/${deletingArticleId}`);
         if (response.status === 200) {
           await fetchArticle(); // Làm mới danh sách
           setDeletingArticleId(null);
@@ -189,7 +153,6 @@ const Articles: React.FC = () => {
     }
   };
 
-  // Xử lý chỉnh sửa bài viết
   const handleEditArticle = async (id: number) => {
     const article = await handleGetArticle(id);
     if (article) {
@@ -198,7 +161,6 @@ const Articles: React.FC = () => {
     }
   };
 
-  // Xem chi tiết bài viết
   const handleViewArticle = async (id: number) => {
     const article = await handleGetArticle(id);
     if (article) {
