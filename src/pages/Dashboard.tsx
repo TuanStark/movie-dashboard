@@ -1,65 +1,157 @@
-import { Film, User, Ticket, Building2, Newspaper, TrendingUp, Calendar, ArrowUpRight, MoreHorizontal, Star, ChevronRight, Activity, DollarSign, Users } from "lucide-react";
-import { movies, bookings, theaters, articles } from "../data/mock-data";
-import { useState } from "react";
+import { Film, User, Ticket, TrendingUp, Calendar, MoreHorizontal, Star, ChevronRight, Activity, DollarSign } from "lucide-react";
+import { useState, useEffect } from "react";
+import ServiceApi from "../services/api";
+import { useNavigate } from "react-router-dom";
+import formatMoney from "../types/format-money";
 
-// Calculate statistics
-const totalRevenue = bookings.reduce((sum, booking) => sum + booking.totalPrice, 0);
-const avgRating = (movies.reduce((sum, movie) => sum + movie.rating, 0) / movies.length).toFixed(1);
-
-const stats = [
-  {
-    label: "Phim",
-    value: movies.length,
-    icon: <Film size={20} className="text-blue-500" />,
-    trend: "+5%",
-    trendUp: true,
-    color: "blue"
-  },
-  {
-    label: "Người dùng",
-    value: 10,
-    icon: <User size={20} className="text-green-500" />,
-    trend: "+12%",
-    trendUp: true,
-    color: "green"
-  },
-  {
-    label: "Vé đặt",
-    value: bookings.length,
-    icon: <Ticket size={20} className="text-yellow-500" />,
-    trend: "+8%",
-    trendUp: true,
-    color: "yellow"
-  },
-  {
-    label: "Rạp",
-    value: theaters.length,
-    icon: <Building2 size={20} className="text-purple-500" />,
-    trend: "0%",
-    trendUp: false,
-    color: "purple"
-  },
-  {
-    label: "Bài viết",
-    value: articles.length,
-    icon: <Newspaper size={20} className="text-pink-500" />,
-    trend: "+3%",
-    trendUp: true,
-    color: "pink"
-  },
-];
-
-// Quick actions
-const quickActions = [
-  { label: "Thêm phim mới", icon: <Film size={16} className="text-blue-500" />, color: "blue" },
-  { label: "Thêm người dùng", icon: <User size={16} className="text-green-500" />, color: "green" },
-  { label: "Xem báo cáo", icon: <Activity size={16} className="text-purple-500" />, color: "purple" },
-  { label: "Quản lý đặt vé", icon: <Ticket size={16} className="text-yellow-500" />, color: "yellow" },
-];
+// Dashboard data interfaces
+interface DashboardData {
+  overview: {
+    totalMovies: { count: number; growth: number; thisMonth: number };
+    totalUsers: { count: number; growth: number; thisMonth: number };
+    totalBookings: { count: number; growth: number; thisMonth: number };
+    totalRevenue: { amount: number; growth: number; thisMonth: number };
+  };
+  charts: {
+    revenueByMonth: Array<{ month: string; revenue: number }>;
+    bookingsByStatus: Array<{ status: string; count: number }>;
+    usersByRole: Array<{ role: string; count: number }>;
+  };
+  recentBookings: Array<{
+    id: number;
+    bookingCode: string;
+    customerName: string;
+    movieTitle: string;
+    theaterName: string;
+    totalPrice: number;
+    status: string;
+    bookingDate: string;
+  }>;
+  topMovies: Array<{
+    id: number;
+    title: string;
+    posterPath: string;
+    rating: number;
+    bookingCount: number;
+  }>;
+  topTheaters: Array<{
+    id: number;
+    name: string;
+    location: string;
+    bookingCount: number;
+  }>;
+}
 
 export default function Dashboard() {
-  const [activeTab, setActiveTab] = useState<'upcoming' | 'popular'>('popular');
-  
+  const navigate = useNavigate();
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch dashboard data
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Fetch main dashboard data
+      const response = await ServiceApi.get('/dashboard');
+      setDashboardData(response.data.data);
+
+      console.log('Dashboard data:', response.data.data);
+    } catch (err: any) {
+      console.error('Error fetching dashboard data:', err);
+      setError(err.message || 'Failed to fetch dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  // Quick actions
+  const quickActions = [
+    { label: "Thêm phim mới", icon: <Film size={16} className="text-blue-500" />, color: "blue" , to: "/movies" },
+    { label: "Thêm người dùng", icon: <User size={16} className="text-green-500" />, color: "green", to: "/users" },
+    { label: "Xem báo cáo", icon: <Activity size={16} className="text-purple-500" />, color: "purple", to: "/bookings" },
+    { label: "Quản lý đặt vé", icon: <Ticket size={16} className="text-yellow-500" />, color: "yellow" , to: "/bookings" },
+  ];
+
+  // Generate stats array from API data
+  const stats = dashboardData ? [
+    {
+      label: "Phim",
+      value: dashboardData.overview.totalMovies.count,
+      icon: <Film size={20} className="text-blue-500" />,
+      trend: `${dashboardData.overview.totalMovies.growth >= 0 ? '+' : ''}${dashboardData.overview.totalMovies.growth}%`,
+      trendUp: dashboardData.overview.totalMovies.growth >= 0,
+      color: "blue"
+    },
+    {
+      label: "Người dùng",
+      value: dashboardData.overview.totalUsers.count,
+      icon: <User size={20} className="text-green-500" />,
+      trend: `${dashboardData.overview.totalUsers.growth >= 0 ? '+' : ''}${dashboardData.overview.totalUsers.growth}%`,
+      trendUp: dashboardData.overview.totalUsers.growth >= 0,
+      color: "green"
+    },
+    {
+      label: "Vé đặt",
+      value: dashboardData.overview.totalBookings.count,
+      icon: <Ticket size={20} className="text-yellow-500" />,
+      trend: `${dashboardData.overview.totalBookings.growth >= 0 ? '+' : ''}${dashboardData.overview.totalBookings.growth}%`,
+      trendUp: dashboardData.overview.totalBookings.growth >= 0,
+      color: "yellow"
+    },
+    {
+      label: "Rạp",
+      value: dashboardData.topTheaters.length,
+      icon: <Activity size={20} className="text-orange-500" />,
+      trend: "0%",
+      trendUp: true,
+      color: "orange"
+    },
+    {
+      label: "Doanh thu",
+      value: `${formatMoney(dashboardData.overview.totalRevenue.amount)}`,
+      icon: <DollarSign size={20} className="text-purple-500" />,
+      trend: `${dashboardData.overview.totalRevenue.growth >= 0 ? '+' : ''}${dashboardData.overview.totalRevenue.growth}%`,
+      trendUp: dashboardData.overview.totalRevenue.growth >= 0,
+      color: "purple"
+    },
+    
+  ] : [];
+
+  if (loading) {
+    return (
+      <div className="animate-fadeIn space-y-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="animate-fadeIn space-y-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <p className="text-red-500 mb-4">Error loading dashboard: {error}</p>
+            <button
+              onClick={fetchDashboardData}
+              className="btn btn-primary"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="animate-fadeIn space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
@@ -82,8 +174,9 @@ export default function Dashboard() {
         <h2 className="text-lg font-semibold mb-4">Thao tác nhanh</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {quickActions.map((action, index) => (
-            <button 
+            <button
               key={index}
+              onClick={() => navigate(action.to)}
               className={`p-4 rounded-xl bg-${action.color}-50 dark:bg-${action.color}-900/20 border border-${action.color}-200 dark:border-${action.color}-800/30 hover:shadow-md transition-all flex items-center justify-between hover-lift`}
             >
               <div className="flex items-center">
@@ -109,11 +202,10 @@ export default function Dashboard() {
               <div className={`p-2 rounded-lg bg-${stat.color}-100/70 dark:bg-${stat.color}-900/30`}>
                 {stat.icon}
               </div>
-              <span className={`text-xs font-medium px-2 py-1 rounded-full flex items-center ${
-                stat.trendUp 
-                  ? "bg-success-50 text-success-600" 
+              <span className={`text-xs font-medium px-2 py-1 rounded-full flex items-center ${stat.trendUp
+                  ? "bg-success-50 text-success-600"
                   : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
-              }`}>
+                }`}>
                 {stat.trend}
               </span>
             </div>
@@ -141,23 +233,27 @@ export default function Dashboard() {
             </button>
           </div>
           <div className="flex items-baseline">
-            <span className="text-3xl font-bold gradient-text">${totalRevenue.toFixed(2)}</span>
+            <span className="text-3xl font-bold gradient-text">
+              {/* {((dashboardData?.overview.totalRevenue.amount || 0) / 1000).toFixed(0)}K VND */}
+              {formatMoney(dashboardData?.overview.totalRevenue.amount || 0)}
+            </span>
             <span className="ml-2 text-sm text-success-600 flex items-center">
-              <TrendingUp size={14} className="mr-1" /> +8.2%
+              <TrendingUp size={14} className="mr-1" />
+              {(dashboardData?.overview.totalRevenue.growth || 0) >= 0 ? '+' : ''}{dashboardData?.overview.totalRevenue.growth || 0}%
             </span>
           </div>
           <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             So với tháng trước
           </div>
-          
+
           {/* Fake chart - in a real app, use a proper chart library */}
           <div className="mt-6 h-48 w-full bg-gray-50/50 dark:bg-gray-800/50 rounded-lg overflow-hidden">
             <div className="h-full w-full flex items-end justify-around px-2">
               {[35, 45, 30, 60, 75, 45, 55, 70, 60, 80, 65, 75].map((height, i) => (
                 <div key={i} className="h-full flex items-end">
-                  <div 
-                    style={{ height: `${height}%` }} 
-                    className={`w-6 rounded-t-md bg-gradient-to-t from-primary-600 to-primary-400 opacity-${Math.floor(height/10) * 10}`}
+                  <div
+                    style={{ height: `${height}%` }}
+                    className={`w-6 rounded-t-md bg-gradient-to-t from-primary-600 to-primary-400 opacity-${Math.floor(height / 10) * 10}`}
                   ></div>
                 </div>
               ))}
@@ -165,178 +261,174 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Rating Card */}
+        {/* Booking Status Chart */}
         <div className="card p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-yellow-100/70 dark:bg-yellow-900/30">
-                <Star size={20} className="text-yellow-500" />
+                <Ticket size={20} className="text-yellow-500" />
               </div>
-              <h2 className="text-lg font-semibold">Đánh giá trung bình</h2>
+              <h2 className="text-lg font-semibold">Trạng thái đặt vé</h2>
             </div>
             <button className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">
               <MoreHorizontal size={18} />
             </button>
           </div>
-          
-          <div className="flex flex-col items-center justify-center h-48">
-            <div className="relative w-32 h-32 flex items-center justify-center">
-              <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
-                <circle cx="18" cy="18" r="16" fill="none" className="stroke-gray-200 dark:stroke-gray-700" strokeWidth="2"></circle>
-                <circle 
-                  cx="18" 
-                  cy="18" 
-                  r="16" 
-                  fill="none" 
-                  className="stroke-yellow-500 animate-pulse-slow" 
-                  strokeWidth="3"
-                  strokeDasharray={`${(Number(avgRating) / 10) * 100} 100`}
-                  strokeLinecap="round"
-                ></circle>
-              </svg>
-              <div className="absolute flex flex-col items-center">
-                <div className="text-4xl font-bold flex items-center">
-                  {avgRating}
-                  <Star size={18} fill="#FFD700" className="ml-1 text-yellow-500" />
+
+          <div className="space-y-4">
+            {dashboardData?.charts.bookingsByStatus.map((item) => (
+              <div key={item.status} className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`w-3 h-3 rounded-full ${item.status === 'CONFIRMED' ? 'bg-green-500' :
+                      item.status === 'PENDING' ? 'bg-yellow-500' :
+                        'bg-red-500'
+                    }`}></div>
+                  <span className="text-sm font-medium">
+                    {item.status === 'CONFIRMED' ? 'Đã xác nhận' :
+                      item.status === 'PENDING' ? 'Đang chờ' :
+                        'Đã hủy'}
+                  </span>
                 </div>
-                <div className="text-sm text-gray-500 dark:text-gray-400">trên 10</div>
+                <span className="font-bold">{item.count}</span>
               </div>
-            </div>
-            <div className="mt-4 text-sm text-center text-gray-500 dark:text-gray-400">
-              Dựa trên {movies.length} phim
+            ))}
+
+            {/* Simple bar chart */}
+            <div className="mt-6 space-y-2">
+              {dashboardData?.charts.bookingsByStatus.map((item) => {
+                const total = dashboardData.charts.bookingsByStatus.reduce((sum, b) => sum + b.count, 0);
+                const percentage = (item.count / total) * 100;
+                return (
+                  <div key={item.status} className="space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span>{item.status}</span>
+                      <span>{percentage.toFixed(1)}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                      <div
+                        className={`h-2 rounded-full ${item.status === 'CONFIRMED' ? 'bg-green-500' :
+                            item.status === 'PENDING' ? 'bg-yellow-500' :
+                              'bg-red-500'
+                          }`}
+                        style={{ width: `${percentage}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
       </div>
 
-      {/* User Activity */}
-      <div className="card p-6 mb-8">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-blue-100/70 dark:bg-blue-900/30">
-              <Users size={20} className="text-blue-500" />
-            </div>
-            <h2 className="text-lg font-semibold">Hoạt động người dùng</h2>
-          </div>
-          <button className="text-primary-600 hover:text-primary-700 dark:hover:text-primary-400 text-sm font-medium flex items-center">
-            Xem tất cả <ChevronRight size={16} />
-          </button>
-        </div>
-        
-        {/* <div className="space-y-4">
-          {users.slice(0, 5).map((user, index) => (
-            <div key={index} className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+      {/* Top Movies and Recent Bookings */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Top Movies */}
+        {dashboardData?.topMovies && (
+          <div className="card p-6">
+            <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <img 
-                  src={user.avatar || `https://ui-avatars.com/api/?name=${user.firstName}+${user.lastName}`} 
-                  alt={`${user.firstName} ${user.lastName}`} 
-                  className="w-10 h-10 rounded-full object-cover ring-2 ring-primary-500/30"
-                />
-                <div>
-                  <div className="font-medium">{user.firstName} {user.lastName}</div>
-                  <div className="text-sm text-gray-500">{user.email}</div>
+                <div className="p-2 rounded-lg bg-blue-100/70 dark:bg-blue-900/30">
+                  <Film size={20} className="text-blue-500" />
                 </div>
-              </div>
-              <div className="text-sm text-gray-500">
-                {["Vừa đặt vé", "Đánh giá phim", "Bình luận mới", "Đăng ký thành viên", "Cập nhật hồ sơ"][index]}
+                <h2 className="text-lg font-semibold">Top Phim</h2>
               </div>
             </div>
-          ))}
-        </div> */}
+            <div className="space-y-3">
+              {dashboardData.topMovies.slice(0, 5).map((movie) => (
+                <div key={movie.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                  <img
+                    src={movie.posterPath}
+                    alt={movie.title}
+                    className="w-12 h-16 object-cover rounded-md"
+                  />
+                  <div className="flex-1">
+                    <h3 className="font-medium text-sm line-clamp-1">{movie.title}</h3>
+                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                      <Star size={12} fill="#FFD700" className="text-yellow-500" />
+                      <span>{movie.rating}</span>
+                      <span>•</span>
+                      <span>{movie.bookingCount} đặt vé</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Recent Bookings */}
+        {dashboardData?.recentBookings && (
+          <div className="card p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-green-100/70 dark:bg-green-900/30">
+                  <Ticket size={20} className="text-green-500" />
+                </div>
+                <h2 className="text-lg font-semibold">Đặt vé gần đây</h2>
+              </div>
+            </div>
+            <div className="space-y-3">
+              {dashboardData.recentBookings.slice(0, 5).map((booking) => (
+                <div key={booking.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                  <div>
+                    <h3 className="font-medium text-sm">{booking.customerName}</h3>
+                    <p className="text-xs text-gray-500 line-clamp-1">{booking.movieTitle}</p>
+                    <p className="text-xs text-gray-400">{booking.bookingCode}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-medium">{(booking.totalPrice / 1000).toFixed(0)}K</p>
+                    <span className={`text-xs px-2 py-1 rounded-full ${booking.status === 'CONFIRMED' ? 'bg-green-100 text-green-700' :
+                        booking.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-red-100 text-red-700'
+                      }`}>
+                      {booking.status}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Movies Tab */}
-      <div className="card overflow-hidden">
-        <div className="border-b border-gray-200 dark:border-gray-700">
-          <div className="flex p-4">
-            <button 
-              className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${
-                activeTab === 'popular' 
-                  ? 'border-primary-500 text-primary-600' 
-                  : 'border-transparent hover:border-gray-300 text-gray-500'
-              }`}
-              onClick={() => setActiveTab('popular')}
-            >
-              Phim nổi bật
-            </button>
-            <button 
-              className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${
-                activeTab === 'upcoming' 
-                  ? 'border-primary-500 text-primary-600' 
-                  : 'border-transparent hover:border-gray-300 text-gray-500'
-              }`}
-              onClick={() => setActiveTab('upcoming')}
-            >
-              Phim sắp chiếu
+      {/* Top Theaters */}
+      {dashboardData?.topTheaters && (
+        <div className="card p-6 mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-purple-100/70 dark:bg-purple-900/30">
+                <Activity size={20} className="text-purple-500" />
+              </div>
+              <h2 className="text-lg font-semibold">Top Rạp chiếu</h2>
+            </div>
+            <button className="text-primary-600 hover:text-primary-700 dark:hover:text-primary-400 text-sm font-medium flex items-center">
+              Xem tất cả <ChevronRight size={16} />
             </button>
           </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {dashboardData.topTheaters.map((theater, index) => (
+              <div key={theater.id} className="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                <div className="flex-shrink-0">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white ${index === 0 ? 'bg-yellow-500' :
+                      index === 1 ? 'bg-gray-400' :
+                        index === 2 ? 'bg-orange-500' :
+                          'bg-blue-500'
+                    }`}>
+                    #{index + 1}
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-medium">{theater.name}</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1">{theater.location}</p>
+                  <p className="text-xs text-primary-600 dark:text-primary-400">{theater.bookingCount} đặt vé</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-        
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-800">
-              <tr>
-                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Phim</th>
-                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Thể loại</th>
-                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Đạo diễn</th>
-                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ngày chiếu</th>
-                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Đánh giá</th>
-                <th className="py-3 px-4 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"></th>
-              </tr>
-            </thead>
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {movies
-                .filter(movie => activeTab === 'upcoming' ? movie.upcoming : !movie.upcoming)
-                .slice(0, 5)
-                .map((movie) => (
-                  <tr key={movie.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                    <td className="py-4 px-4">
-                      <div className="flex items-center">
-                        <img 
-                          src={movie.posterPath} 
-                          alt={movie.title} 
-                          className="w-10 h-14 object-cover rounded-md mr-3 shadow-md" 
-                        />
-                        <div className="font-medium">{movie.title}</div>
-                      </div>
-                    </td>
-                    <td className="py-4 px-4">
-                      <div className="flex flex-wrap gap-1">
-                        {movie.genres.map((genre, idx) => (
-                          <span 
-                            key={idx} 
-                            className="inline-block px-2 py-1 text-xs rounded-full bg-gray-100 dark:bg-gray-700"
-                          >
-                            {genre}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="py-4 px-4 text-sm">{movie.director}</td>
-                    <td className="py-4 px-4 text-sm">{movie.releaseDate}</td>
-                    <td className="py-4 px-4">
-                      <div className="flex items-center">
-                        <Star size={16} fill="#FFD700" className="mr-1 text-yellow-500" />
-                        <span>{movie.rating}</span>
-                      </div>
-                    </td>
-                    <td className="py-4 px-4 text-right">
-                      <button className="text-primary-600 hover:text-primary-700 dark:hover:text-primary-400">
-                        <ArrowUpRight size={16} />
-                      </button>
-                    </td>
-                  </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700 text-center">
-          <button className="text-primary-600 hover:text-primary-700 dark:hover:text-primary-400 text-sm font-medium flex items-center justify-center mx-auto">
-            Xem tất cả phim <ChevronRight size={16} className="ml-1" />
-          </button>
-        </div>
-      </div>
+      )}
     </div>
   );
 }
