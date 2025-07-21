@@ -11,9 +11,12 @@
   },
   "dependencies": {
     "@nestjs/mapped-types": "*",
+    "@react-google-maps/api": "^2.20.7",
+    "@types/node-geocoder": "^4.2.6",
     "@types/react-router-dom": "^5.3.3",
     "axios": "^1.10.0",
     "lucide-react": "^0.518.0",
+    "node-geocoder": "^4.4.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.6.2",

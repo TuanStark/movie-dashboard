@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import type { Theater } from '../../data/mock-data';
+// import type { Theater } from '../../data/mock-data';
 import { X, Edit, Trash, MapPin, Calendar, Clock, DollarSign, Star } from 'lucide-react';
 import { useShowtimes } from '../../contexts/ShowtimeContext';
-import { movies } from '../../data/mock-data';
+import type { Theater } from '../../types/global-types';
+// import { movies } from '../../data/mock-data';
 
 interface TheaterDetailProps {
   theater: Theater;
@@ -71,11 +72,22 @@ const TheaterDetail: React.FC<TheaterDetailProps> = ({ theater, onClose, onEdit,
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Vĩ độ (Latitude)</p>
-                <p className="font-medium">{theater.coordinates.lat}</p>
+                <p className="font-medium">{theater.latitude}</p>
               </div>
               <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Kinh độ (Longitude)</p>
-                <p className="font-medium">{theater.coordinates.lng}</p>
+                <p className="font-medium">{theater.longitude}</p>
+              </div>
+              <div className="col-span-2">
+                <a
+                  href={`https://www.google.com/maps?q=${theater.latitude},${theater.longitude}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-primary btn-sm flex items-center gap-1"
+                >
+                  <MapPin size={16} />
+                  <span>Xem trên Maps</span>
+                </a>
               </div>
             </div>
           </div>

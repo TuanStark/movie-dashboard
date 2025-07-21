@@ -85,6 +85,11 @@ export interface Theater {
   id: number;
   name: string;
   location: string;
+  longitude: number;
+  latitude: number;
+  logo: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface ShowtimeInput {

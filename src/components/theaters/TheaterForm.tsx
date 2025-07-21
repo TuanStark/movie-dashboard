@@ -1,8 +1,10 @@
 // Fixed TheaterForm.tsx
 import React, { useState, useEffect } from 'react';
-import type { Theater } from '../../data/mock-data';
+import type { Theater } from '../../types/global-types';
 import { X } from 'lucide-react';
 import ImageUpload from '../ImageUpload';
+import { geocoder } from '../../services/geocoder';
+import { validateVietnamCoordinates } from '../../utils/coordinateValidator';
 
 interface TheaterFormProps {
   theater?: Theater;
@@ -20,16 +22,16 @@ const emptyTheater: TheaterFormData = {
   name: '',
   location: '',
   logo: '', // Default image
-  coordinates: {
-    lat: 10.762622,  // Default latitude (example: Ho Chi Minh City)
-    lng: 106.660172   // Default longitude (example: Ho Chi Minh City)
-  }
+  latitude: 0,
+  longitude: 0,
+  logoFile: null,
 };
 
 const TheaterForm: React.FC<TheaterFormProps> = ({ theater, onSubmit, onCancel }) => {
   const [formData, setFormData] = useState<TheaterFormData>(emptyTheater);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGeocodingLoading, setIsGeocodingLoading] = useState(false);
 
   // Initialize form with theater data if provided (edit mode)
   useEffect(() => {
@@ -43,24 +45,94 @@ const TheaterForm: React.FC<TheaterFormProps> = ({ theater, onSubmit, onCancel }
     }
   }, [theater]);
 
+
+
+  // Geocoding function using Geocoder Service
+  const geocodeAddress = async (address: string) => {
+    if (!address.trim() || address.length < 10) return;
+
+    setIsGeocodingLoading(true);
+    try {
+      const response = await geocoder.geocode(address);
+
+      if (response.success && response.results.length > 0) {
+        const result = response.results[0];
+
+        // Validate coordinates before setting
+        const validation = validateVietnamCoordinates(result.latitude, result.longitude, address);
+
+        setFormData(prev => ({
+          ...prev,
+          latitude: result.latitude,
+          longitude: result.longitude
+        }));
+        // Show success message with validation info
+        let message = `✅ Tọa độ đã được tạo!\nLatitude: ${result.latitude.toFixed(6)}\nLongitude: ${result.longitude.toFixed(6)}\nĐịa chỉ: ${result.formattedAddress}`;
+
+        if (validation.nearestCity) {
+          message += `\n📍 Gần nhất: ${validation.nearestCity} (${(validation.distanceFromCity! / 1000).toFixed(1)}km)`;
+        }
+
+        if (validation.warnings.length > 0) {
+          message += `\n⚠️ Cảnh báo: ${validation.warnings.join(', ')}`;
+        }
+
+      } else {
+        console.warn('Geocoding failed:', response.error);
+        alert(response.error || 'Không thể tìm tọa độ cho địa chỉ này.');
+      }
+    } catch (error) {
+      console.error('Geocoding error:', error);
+      alert('Lỗi khi gọi dịch vụ geocoding. Vui lòng thử lại.');
+    } finally {
+      setIsGeocodingLoading(false);
+    }
+  };
+
+  // Debounced geocoding
+  const [geocodingTimeout, setGeocodingTimeout] = useState<number | null>(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (geocodingTimeout) {
+        clearTimeout(geocodingTimeout);
+      }
+    };
+  }, [geocodingTimeout]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    
+
     if (name === 'lat' || name === 'lng') {
       setFormData({
         ...formData,
-        coordinates: {
-          ...formData.coordinates,
-          [name]: parseFloat(value) || 0
-        }
+        longitude: name === 'lng' ? parseFloat(value) : formData.longitude,
+        latitude: name === 'lat' ? parseFloat(value) : formData.latitude,
       });
     } else {
       setFormData({
         ...formData,
         [name]: value
       });
+
+      // Auto-geocode when location changes
+      if (name === 'location') {
+        // Clear existing timeout
+        if (geocodingTimeout) {
+          clearTimeout(geocodingTimeout);
+        }
+
+        // Set new timeout for geocoding (wait 2 seconds after user stops typing)
+        if (value.trim().length > 10) {
+          const timeout = window.setTimeout(() => {
+            geocodeAddress(value);
+          }, 2000);
+          setGeocodingTimeout(timeout);
+        }
+      }
     }
-    
+
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
@@ -111,8 +183,8 @@ const TheaterForm: React.FC<TheaterFormProps> = ({ theater, onSubmit, onCancel }
       formDataObj.append('name', formData.name);
       formDataObj.append('location', formData.location);
       // Add coordinates if your backend expects them
-      // formDataObj.append('latitude', formData.coordinates.lat.toString());
-      // formDataObj.append('longitude', formData.coordinates.lng.toString());
+      formDataObj.append('latitude', formData.latitude.toString());
+      formDataObj.append('longitude', formData.longitude.toString());
 
       if (formData.logoFile) {
         console.log('formData.logoFile', formData.logoFile);
@@ -144,10 +216,8 @@ const TheaterForm: React.FC<TheaterFormProps> = ({ theater, onSubmit, onCancel }
           name: formData.name,
           location: formData.location,
           logo: responseData?.data?.logo || formData.logo,
-          coordinates: {
-            lat: Number(formData.coordinates.lat) || 0,
-            lng: Number(formData.coordinates.lng) || 0,
-          },
+          latitude: formData.latitude,
+          longitude: formData.longitude,
         });
       } else {
         throw new Error(responseData.message || `Failed to ${isUpdate ? 'update' : 'create'} theater`);
@@ -212,31 +282,58 @@ const TheaterForm: React.FC<TheaterFormProps> = ({ theater, onSubmit, onCancel }
               <label htmlFor="location" className="block text-sm font-medium">
                 Địa chỉ <span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
-                id="location"
-                name="location"
-                value={formData.location}
-                onChange={handleChange}
-                disabled={isSubmitting}
-                className={`w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg border ${
-                  errors.location ? 'border-error-500' : 'border-transparent'
-                } focus:outline-none focus:ring-2 focus:ring-purple-500`}
-                placeholder="Nhập địa chỉ rạp chiếu phim"
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  id="location"
+                  name="location"
+                  value={formData.location}
+                  onChange={handleChange}
+                  disabled={isSubmitting}
+                  className={`w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg border ${
+                    errors.location ? 'border-error-500' : 'border-transparent'
+                  } focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                    isGeocodingLoading ? 'pr-10' : ''
+                  }`}
+                  placeholder="Nhập địa chỉ chi tiết (VD: 116 Nguyễn Du, Quận 1, TP.HCM)"
+                />
+                {isGeocodingLoading && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-500"></div>
+                  </div>
+                )}
+              </div>
               {errors.location && (
                 <p className="text-error-500 text-xs">{errors.location}</p>
               )}
+              <div className="text-xs text-gray-500 dark:text-gray-400">
+                �️ Nhập địa chỉ chi tiết để tự động tạo tọa độ (Google Maps)
+              </div>
+              {formData.latitude !== 0 && formData.longitude !== 0 && (
+                <div className="text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 p-2 rounded">
+                  <div className="flex items-center justify-between">
+                    <span>✅ Tọa độ đã được tạo: {formData.latitude.toFixed(6)}, {formData.longitude.toFixed(6)}</span>
+                    <a
+                      href={`https://www.google.com/maps?q=${formData.latitude},${formData.longitude}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-800 underline text-xs"
+                    >
+                      📍 Xem trên Maps
+                    </a>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* Coordinates */}
+            {/* Coordinates Display */}
             <div className="space-y-2">
-              {/* <label className="block text-sm font-medium">
-                Tọa độ <span className="text-red-500">*</span>
-              </label> */}
+              <label className="block text-sm font-medium">
+                Tọa độ (Tự động tạo từ địa chỉ)
+              </label>
               <div className="grid grid-cols-2 gap-4">
-                {/* <div>
-                  <label htmlFor="lat" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                <div>
+                  <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
                     Vĩ độ (Latitude)
                   </label>
                   <input
@@ -244,17 +341,15 @@ const TheaterForm: React.FC<TheaterFormProps> = ({ theater, onSubmit, onCancel }
                     step="0.000001"
                     id="lat"
                     name="lat"
-                    value={formData.coordinates.lat}
+                    value={formData.latitude}
                     onChange={handleChange}
                     disabled={isSubmitting}
-                    className={`w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg border ${
-                      errors.coordinates ? 'border-error-500' : 'border-transparent'
-                    } focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                    className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg border border-transparent focus:outline-none focus:ring-2 focus:ring-purple-500"
                     placeholder="10.762622"
                   />
-                </div> */}
-                {/* <div>
-                  <label htmlFor="lng" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
                     Kinh độ (Longitude)
                   </label>
                   <input
@@ -262,16 +357,41 @@ const TheaterForm: React.FC<TheaterFormProps> = ({ theater, onSubmit, onCancel }
                     step="0.000001"
                     id="lng"
                     name="lng"
-                    value={formData.coordinates.lng}
+                    value={formData.longitude}
                     onChange={handleChange}
                     disabled={isSubmitting}
-                    className={`w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg border ${
-                      errors.coordinates ? 'border-error-500' : 'border-transparent'
-                    } focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                    className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg border border-transparent focus:outline-none focus:ring-2 focus:ring-purple-500"
                     placeholder="106.660172"
                   />
-                </div> */}
+                </div>
               </div>
+
+              {/* Manual Geocode Button */}
+              {formData.location.trim().length > 10 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-gray-500">
+                    Hoặc tạo tọa độ thủ công:
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => geocodeAddress(formData.location)}
+                    disabled={isSubmitting || isGeocodingLoading}
+                    className="btn btn-outline btn-sm flex items-center gap-2"
+                  >
+                    {isGeocodingLoading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-3 w-3 border-b border-current"></div>
+                        Đang tìm...
+                      </>
+                    ) : (
+                      <>
+                        📍 Tạo tọa độ
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+
               {errors.coordinates && (
                 <p className="text-error-500 text-xs">{errors.coordinates}</p>
               )}
