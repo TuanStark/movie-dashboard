@@ -15,7 +15,9 @@ import {
   HelpCircle,
   User,
   Calendar,
-  List
+  List,
+  Star,
+  Armchair
 } from 'lucide-react';
 
 interface NavLinkProps {
@@ -106,6 +108,8 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
           <NavLink to="/genres" icon={<List size={18} />} label="Quản lí thể loại" />
           <NavLink to="/actors" icon={<User size={18} />} label="Quản lí diễn viên" />
           <NavLink to="/articles" icon={<Newspaper size={18} />} label="Quản lí bài viết" />
+          <NavLink to="/reviews" icon={<Star size={18} />} label="Quản lí đánh giá" />
+          <NavLink to="/seats" icon={<Armchair size={18} />} label="Quản lí ghế" />
         </nav>
         
         <div className="p-4 border-t border-gray-200/80 dark:border-gray-700/80">

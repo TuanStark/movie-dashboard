@@ -167,3 +167,16 @@ export interface Meta{
   limitNumber: number;
   totalPages: number;
 }
+
+export interface Review {
+  id: number;
+  userId: number;
+  movieId: number;
+  rating: number;
+  comment: string;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt?: string;
+  updatedAt?: string;
+  user: Users;
+  movie: Movie;
+}
