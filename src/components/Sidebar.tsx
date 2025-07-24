@@ -97,19 +97,30 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
           </div>
           <NavLink to="/" icon={<LayoutDashboard size={18} />} label="Dashboard" />
           <NavLink to="/movies" icon={<Film size={18} />} label="Quản lí phim" />
-          
+
           <div className="text-xs uppercase text-gray-500 dark:text-gray-400 font-medium px-4 py-2 mt-4">
-            Quản lý
+            Rạp
           </div>
-          <NavLink to="/users" icon={<UsersIcon size={18} />} label="Quản lí tài khoản" />
-          <NavLink to="/bookings" icon={<Ticket size={18} />} label="Quản lí vé" />
           <NavLink to="/theaters" icon={<Building2 size={18} />} label="Quản lí rạp" />
-          <NavLink to="/showtimes" icon={<Calendar size={18} />} label="Quản lí suất chiếu" />
+          <NavLink to="/seats" icon={<Armchair size={18} />} label="Quản lí ghế" />
+
+          <div className="text-xs uppercase text-gray-500 dark:text-gray-400 font-medium px-4 py-2 mt-4">
+            Phim
+          </div>
           <NavLink to="/genres" icon={<List size={18} />} label="Quản lí thể loại" />
           <NavLink to="/actors" icon={<User size={18} />} label="Quản lí diễn viên" />
+          <NavLink to="/bookings" icon={<Ticket size={18} />} label="Quản lí vé" />
+          <NavLink to="/showtimes" icon={<Calendar size={18} />} label="Quản lí suất chiếu" />
+          
+          <div className="text-xs uppercase text-gray-500 dark:text-gray-400 font-medium px-4 py-2 mt-4">
+            Quản lý chung
+          </div>
+          <NavLink to="/users" icon={<UsersIcon size={18} />} label="Quản lí tài khoản" />
           <NavLink to="/articles" icon={<Newspaper size={18} />} label="Quản lí bài viết" />
           <NavLink to="/reviews" icon={<Star size={18} />} label="Quản lí đánh giá" />
-          <NavLink to="/seats" icon={<Armchair size={18} />} label="Quản lí ghế" />
+          
+
+
         </nav>
         
         <div className="p-4 border-t border-gray-200/80 dark:border-gray-700/80">
