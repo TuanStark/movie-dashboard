@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-// import type { Theater } from '../../data/mock-data';
+import React, { useState, useEffect } from 'react';
 import { X, Edit, Trash, MapPin, Calendar, Clock, DollarSign, Star } from 'lucide-react';
 import { useShowtimes } from '../../contexts/ShowtimeContext';
-import type { Theater } from '../../types/global-types';
-// import { movies } from '../../data/mock-data';
+import type { Theater, Movie } from '../../types/global-types';
+import ServiceApi from '../../services/api';
+import GoogleMapComponent from '../maps/GoogleMap';
 
 interface TheaterDetailProps {
   theater: Theater;
@@ -13,18 +13,31 @@ interface TheaterDetailProps {
 }
 
 const TheaterDetail: React.FC<TheaterDetailProps> = ({ theater, onClose, onEdit, onDelete }) => {
-  const { getShowtimesByTheater, getMoviesByTheater } = useShowtimes();
+  const { getShowtimesByTheater } = useShowtimes();
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  
+  const [movies, setMovies] = useState<Movie[]>([]);
+
   const theaterShowtimes = getShowtimesByTheater(theater.id);
-  const theaterMovies = getMoviesByTheater(theater.id);
-  console.log(theaterMovies);
-  
+
+  // Fetch movies data
+  useEffect(() => {
+    const fetchMovies = async () => {
+      try {
+        const response = await ServiceApi.get('/movies');
+        setMovies(response.data.data.data || []);
+      } catch (error) {
+        console.error('Error fetching movies:', error);
+      }
+    };
+
+    fetchMovies();
+  }, []);
+
   // Lấy danh sách các ngày có suất chiếu tại rạp
   const availableDates = [...new Set(theaterShowtimes.map(showtime => showtime.date))].sort();
-  
+
   // Nếu chưa chọn ngày, chọn ngày đầu tiên
-  React.useEffect(() => {
+  useEffect(() => {
     if (availableDates.length > 0 && !selectedDate) {
       setSelectedDate(availableDates[0]);
     }
@@ -46,7 +59,7 @@ const TheaterDetail: React.FC<TheaterDetailProps> = ({ theater, onClose, onEdit,
   }, {} as Record<number, typeof filteredShowtimes>);
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" style={{ marginTop: '0px' }}>
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto animate-fadeIn">
         <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
           <h2 className="text-xl font-semibold">Chi tiết rạp chiếu phim</h2>
@@ -92,9 +105,17 @@ const TheaterDetail: React.FC<TheaterDetailProps> = ({ theater, onClose, onEdit,
             </div>
           </div>
           
-          {/* Map placeholder - in a real app, you would integrate with a mapping service */}
-          <div className="bg-gray-100 dark:bg-gray-700 rounded-lg h-48 flex items-center justify-center mb-6">
-            <p className="text-gray-500 dark:text-gray-400">Bản đồ sẽ được hiển thị ở đây</p>
+          {/* Google Map */}
+          <div className="mb-6">
+            <h4 className="font-medium text-gray-500 dark:text-gray-400 mb-3">Vị trí trên bản đồ</h4>
+            <GoogleMapComponent
+              latitude={theater.latitude}
+              longitude={theater.longitude}
+              name={theater.name}
+              location={theater.location}
+              height="300px"
+              zoom={16}
+            />
           </div>
           
           {/* Movies and Showtimes Section */}
@@ -152,7 +173,7 @@ const TheaterDetail: React.FC<TheaterDetailProps> = ({ theater, onClose, onEdit,
                                     key={idx}
                                     className="px-2 py-0.5 bg-gray-100/80 dark:bg-gray-700/80 rounded-full text-xs"
                                   >
-                                    {genre}
+                                    {genre.genre?.name || ''}
                                   </span>
                                 ))}
                               </div>
