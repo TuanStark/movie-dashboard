@@ -25,8 +25,6 @@ const SeatStats: React.FC<SeatStatsProps> = ({ theater, seats }) => {
   const averagePrice = totalSeats > 0 ? totalValue / totalSeats : 0;
 
   const rows = Object.keys(seatsByRow).sort();
-  const maxSeatsPerRow = Math.max(...Object.values(seatsByRow));
-  const minSeatsPerRow = Math.min(...Object.values(seatsByRow));
 
   const getTypeColor = (type: string) => {
     switch (type.toLowerCase()) {
@@ -94,7 +92,7 @@ const SeatStats: React.FC<SeatStatsProps> = ({ theater, seats }) => {
       </div>
 
       {/* Seat Types Distribution */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
         <div>
           <h4 className="font-medium text-gray-900 dark:text-white mb-4">Phân bố theo loại ghế</h4>
           <div className="space-y-3">
@@ -104,7 +102,7 @@ const SeatStats: React.FC<SeatStatsProps> = ({ theater, seats }) => {
                 <div key={type} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${getTypeColor(type)}`}>
-                      {type.toUpperCase()}
+                      {type === 'VIP' ? 'VIP' : 'Tiêu chuẩn'}
                     </span>
                     <span className="text-sm text-gray-600 dark:text-gray-400">
                       {count} ghế
@@ -127,34 +125,6 @@ const SeatStats: React.FC<SeatStatsProps> = ({ theater, seats }) => {
                 </div>
               );
             })}
-          </div>
-        </div>
-
-        <div>
-          <h4 className="font-medium text-gray-900 dark:text-white mb-4">Thông tin hàng ghế</h4>
-          <div className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Hàng đầu tiên:</span>
-              <span className="font-medium">{rows[0] || 'N/A'}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Hàng cuối cùng:</span>
-              <span className="font-medium">{rows[rows.length - 1] || 'N/A'}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Ghế/hàng (max):</span>
-              <span className="font-medium">{maxSeatsPerRow || 0}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Ghế/hàng (min):</span>
-              <span className="font-medium">{minSeatsPerRow || 0}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Ghế/hàng (TB):</span>
-              <span className="font-medium">
-                {rows.length > 0 ? (totalSeats / rows.length).toFixed(1) : 0}
-              </span>
-            </div>
           </div>
         </div>
       </div>

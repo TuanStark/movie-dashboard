@@ -81,13 +81,7 @@ const SeatMap: React.FC<SeatMapProps> = ({
           <div className="w-6 h-6 bg-gray-100 border border-gray-300 rounded flex items-center justify-center">
             <Armchair size={14} className="text-gray-600" />
           </div>
-          <span className="text-sm text-gray-600 dark:text-gray-400">Standard</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 bg-purple-100 border border-purple-300 rounded flex items-center justify-center">
-            <Armchair size={14} className="text-purple-600" />
-          </div>
-          <span className="text-sm text-gray-600 dark:text-gray-400">Premium</span>
+          <span className="text-sm text-gray-600 dark:text-gray-400">Tiêu chuẩn</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 bg-yellow-100 border border-yellow-300 rounded flex items-center justify-center">
@@ -95,20 +89,26 @@ const SeatMap: React.FC<SeatMapProps> = ({
           </div>
           <span className="text-sm text-gray-600 dark:text-gray-400">VIP</span>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 bg-blue-500 border border-blue-600 rounded flex items-center justify-center">
-            <Armchair size={14} className="text-white" />
-          </div>
-          <span className="text-sm text-gray-600 dark:text-gray-400">Đã chọn</span>
-        </div>
       </div>
 
       {/* Seat Map */}
-      <div className="space-y-3">
+      <div className='flex justify-center items-center'>
+        <div className="space-y-3">
         {sortedRows.map((row) => {
           const rowSeats = seatsByRow[row].sort((a, b) => a.number - b.number);
-          
           return (
+            <>
+              {/* Seat Numbers */}
+              <div className="flex gap-1 flex-wrap ml-10">
+                {rowSeats.map((seat) => (
+                  <div
+                    key={`label-${seat.id}`}
+                    className="w-10 text-center text-xs text-gray-500 dark:text-gray-400"
+                  >
+                    {seat.number}
+                  </div>
+                ))}
+              </div>
             <div key={row} className="flex items-center gap-2">
               {/* Row Label */}
               <div className="w-8 h-8 bg-gray-200 dark:bg-gray-600 rounded flex items-center justify-center font-medium text-sm">
@@ -133,21 +133,11 @@ const SeatMap: React.FC<SeatMapProps> = ({
                   </div>
                 ))}
               </div>
-              
-              {/* Seat Numbers */}
-              <div className="flex gap-1 flex-wrap ml-2">
-                {rowSeats.map((seat) => (
-                  <div
-                    key={`label-${seat.id}`}
-                    className="w-10 text-center text-xs text-gray-500 dark:text-gray-400"
-                  >
-                    {seat.number}
-                  </div>
-                ))}
-              </div>
             </div>
+            </>
           );
         })}
+      </div>
       </div>
 
       {seats.length === 0 && (
